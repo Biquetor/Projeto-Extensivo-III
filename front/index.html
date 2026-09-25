@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comunidade Viva - Gestão & Agendamentos</title>
+
+    <!-- Fonts & Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent-color: #2563eb;
+        --accent-hover: #1d4ed8;
+        --border-color: #e2e8f0;
+        --radius: 12px;
+        --shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.05),
+          0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+      }
+      body {
+        background-color: var(--bg-primary);
+        color: var(--text-main);
+        padding: 24px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      header p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .user-status {
+        background: #e0e7ff;
+        color: #3730a3;
+        padding: 8px 14px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: var(--radius);
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      @media (max-width: 992px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow);
+      }
+
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #map {
+        height: 420px;
+        border-radius: var(--radius);
+        width: 100%;
+        z-index: 1;
+      }
+
+      .table-container {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #f1f5f9;
+        padding: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+      td {
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      tr:hover {
+        background-color: #f8fafc;
+      }
+
+      .badge {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .modal {
+        background: white;
+        padding: 28px;
+        border-radius: var(--radius);
+        width: 100%;
+        max-width: 480px;
+        box-shadow: var(--shadow);
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: var(--accent-color);
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .btn-secondary {
+        background: #e2e8f0;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .btn-danger:hover {
+        background: #fca5a5;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Cabeçalho Limpo sem duplicidade -->
+    <header>
+      <div>
+        <h1>
+          <i class="fa-solid fa-city" style="color: var(--accent-color)"></i>
+          Comunidade Viva
+        </h1>
+        <p>Gestão de Espaços Públicos & Agendamentos Comunitários</p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px">
+        <!-- Indicador de Sessão Ativa -->
+        <div id="usuarioLogadoInfo" class="user-status" style="display: none">
+          <i class="fa-solid fa-user-check"></i>
+          <span id="nomeUsuarioLogado"></span>
+          <button class="btn-danger" onclick="logoutUsuario()" title="Sair">
+            Sair
+          </button>
+        </div>
+
+        <!-- Botão Entrar -->
+        <button id="btnEntrarHeader" class="btn-secondary" onclick="abrirModalLogin()">
+          <i class="fa-solid fa-right-to-bracket"></i> Entrar
+        </button>
+
+        <button class="btn-secondary" onclick="abrirModalUsuario()">
+          <i class="fa-solid fa-user-plus"></i> Novo Usuário
+        </button>
+        <button class="btn-primary" onclick="abrirModalAgendamento()">
+          <i class="fa-solid fa-plus"></i> Novo Agendamento
+        </button>
+      </div>
+    </header>
+
+    <!-- Grade Principal -->
+    <div class="dashboard-grid">
+      <!-- Mapa -->
+      <div class="card">
+        <div class="card-title">
+          <i
+            class="fa-solid fa-map-location-dot"
+            style="color: var(--accent-color)"
+          ></i>
+          Mapa de Locais
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- Resumo de Locais Registados -->
+      <div class="card">
+        <div class="card-title">
+          <i
+            class="fa-solid fa-location-dot"
+            style="color: var(--accent-color)"
+          ></i>
+          Espaços Disponíveis
+        </div>
+        <div
+          id="listaEspacos"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+          "
+        >
+          <p style="color: var(--text-muted); font-size: 14px">
+            Carregando espaços...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela com Locais Agendados -->
+    <div class="card">
+      <div class="card-title">
+        <i
+          class="fa-solid fa-calendar-check"
+          style="color: var(--accent-color)"
+        ></i>
+        Locais Agendados
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuário</th>
+              <th>Local / Espaço</th>
+              <th>Início do Agendamento</th>
+              <th>Fim do Agendamento</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaAgendamentos">
+            <tr>
+              <td
+                colspan="6"
+                style="text-align: center; color: var(--text-muted)"
+              >
+                Nenhum agendamento encontrado.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal para Criar Agendamento -->
+    <div class="modal-backdrop" id="modalAgendamento">
+      <div class="modal">
+        <h3 style="margin-bottom: 18px">
+          <i class="fa-regular fa-calendar-plus"></i> Reservar Espaço
+        </h3>
+        <form id="agendamentoForm">
+          <div class="form-group">
+            <label for="nomeUsuarioExibicao">Usuário Responsável:</label>
+            <input
+              type="text"
+              id="nomeUsuarioExibicao"
+              readonly
+              style="background: #f1f5f9; font-weight: 600"
+            />
+            <input type="hidden" id="usuarioId" />
+          </div>
+
+          <div class="form-group">
+            <label for="espacoId">Selecione o Local:</label>
+            <select id="espacoId" required>
+              <option value="">A carregar...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dataInicio">Data e Hora de Início:</label>
+            <input type="datetime-local" id="dataInicio" required />
+          </div>
+
+          <div class="form-group">
+            <label for="dataFim">Data e Hora de Término:</label>
+            <input type="datetime-local" id="dataFim" required />
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="fecharModalAgendamento()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">Confirmar Reserva</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para Criar Novo Espaço Público -->
+    <div class="modal-backdrop" id="modalCriarEspaco">
+      <div class="modal">
+        <h3 style="margin-bottom: 18px">
+          <i class="fa-solid fa-map-pin"></i> Cadastrar Novo Espaço Público
+        </h3>
+        <form id="espacoForm">
+          <div class="form-group">
+            <label for="novoNome">Nome do Local:</label>
+            <input
+              type="text"
+              id="novoNome"
+              required
+              placeholder="Ex: Praça do Bairro"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="novoTipo">Tipo de Espaço:</label>
+            <select id="novoTipo" required>
+              <option value="PRACA">Praça</option>
+              <option value="PARQUE">Parque</option>
+              <option value="QUADRA">Quadra Esportiva</option>
+              <option value="CENTRO_COMUNITARIO">Centro Comunitário</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="novaDescricao">Descrição:</label>
+            <input
+              type="text"
+              id="novaDescricao"
+              placeholder="Ex: Área verde com quadra"
+            />
+          </div>
+
+          <div style="display: flex; gap: 10px">
+            <div class="form-group" style="flex: 1">
+              <label>Latitude:</label>
+              <input
+                type="text"
+                id="novoLat"
+                readonly
+                style="background: #f1f5f9"
+              />
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>Longitude:</label>
+              <input
+                type="text"
+                id="novoLng"
+                readonly
+                style="background: #f1f5f9"
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="fecharModalEspaco()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">Guardar Espaço</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para Cadastrar Usuário -->
+    <div class="modal-backdrop" id="modalCriarUsuario">
+      <div class="modal">
+        <h3 style="margin-bottom: 18px">
+          <i class="fa-solid fa-user"></i> Cadastrar Novo Usuário
+        </h3>
+        <form id="usuarioForm">
+          <div class="form-group">
+            <label for="novoNomeUsuario">Nome Completo:</label>
+            <input
+              type="text"
+              id="novoNomeUsuario"
+              required
+              placeholder="Ex: João Silva"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="novoEmailUsuario">E-mail:</label>
+            <input
+              type="email"
+              id="novoEmailUsuario"
+              required
+              placeholder="Ex: joao@email.com"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="novaSenhaUsuario">Senha:</label>
+            <input
+              type="password"
+              id="novaSenhaUsuario"
+              required
+              placeholder="Digite sua senha"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="fecharModalUsuario()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">Salvar Usuário</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para Fazer Login -->
+    <div class="modal-backdrop" id="modalLogin">
+      <div class="modal">
+        <h3 style="margin-bottom: 18px">
+          <i class="fa-solid fa-right-to-bracket"></i> Entrar na Conta
+        </h3>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">E-mail:</label>
+            <input
+              type="email"
+              id="loginEmail"
+              required
+              placeholder="Seu e-mail cadastrado"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="loginSenha">Senha:</label>
+            <input
+              type="password"
+              id="loginSenha"
+              required
+              placeholder="Sua senha"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="fecharModalLogin()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+   
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
