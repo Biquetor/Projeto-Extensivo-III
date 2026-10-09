@@ -19,12 +19,12 @@ public class Usuario {
     @Column(nullable = false)
     private String nome;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String senha;
 
     @Column(name = "tipo_permissao")
-    private String tipoPermissao;
+    private String role; // Pode ser "USER" ou "ADMIN"
 }

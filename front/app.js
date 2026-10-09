@@ -3,205 +3,71 @@ const API_BASE_URL = "http://localhost:8080/api";
 let map;
 let markersGroup;
 
-document.addEventListener("DOMContentLoaded", () => {
-  verificarSessaoUsuario();
-
-  // Configuração do Leaflet (Mapa)
-  const mapElement = document.getElementById("map");
-  if (mapElement) {
-    map = L.map("map").setView([-27.81, -50.32], 13);
-
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    }).addTo(map);
-
-    markersGroup = L.layerGroup().addTo(map);
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-
-    map.on("click", (e) => {
-      abrirModalEspaco(e.latlng.lat, e.latlng.lng);
-    });
-  }
-
-  // LISTENERS DE FORMULÁRIO
-
-  // 1. Enviar Cadastro de Espaço (POST)
-  const espacoForm = document.getElementById("espacoForm");
-  if (espacoForm) {
-    espacoForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        nome: document.getElementById("novoNome")?.value || "",
-        tipo: document.getElementById("novoTipo")?.value || "",
-        descricao: document.getElementById("novaDescricao")?.value || "",
-        latitude: parseFloat(document.getElementById("novoLat")?.value || 0),
-        longitude: parseFloat(document.getElementById("novoLng")?.value || 0),
-      };
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/espacos-publicos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          alert("Espaço cadastrado com sucesso!");
-          fecharModalEspaco();
-          carregarEspacos();
-        } else {
-          const errText = await response.text();
-          alert(`Erro do Servidor (${response.status}): ${errText}`);
-        }
-      } catch (error) {
-        console.error("Erro no envio:", error);
-        alert("Erro de conexão com o servidor.");
-      }
-    });
-  }
-
-  // 2. Enviar Agendamento (POST)
-  const agendamentoForm = document.getElementById("agendamentoForm");
-  if (agendamentoForm) {
-    agendamentoForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const usuarioLogado = obterUsuarioLogado();
-      if (!usuarioLogado) {
-        alert("Você precisa estar logado para realizar um agendamento.");
-        return;
-      }
-
-      const payload = {
-        dataHoraInicio: document.getElementById("dataInicio")?.value,
-        dataHoraFim: document.getElementById("dataFim")?.value,
-        usuario: { id: parseInt(usuarioLogado.id) },
-        espacoPublico: {
-          id: parseInt(document.getElementById("espacoId")?.value),
-        },
-      };
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/agendamentos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          alert("Agendamento criado com sucesso!");
-          fecharModalAgendamento();
-          agendamentoForm.reset();
-          carregarAgendamentos();
-        } else {
-          const err = await response.text();
-          alert(`Erro no agendamento: ${err}`);
-        }
-      } catch (error) {
-        console.error("Erro de requisição:", error);
-      }
-    });
-  }
-
-  // 3. Enviar Cadastro de Usuário (POST)
-  const usuarioForm = document.getElementById("usuarioForm");
-  if (usuarioForm) {
-    usuarioForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        nome: document.getElementById("novoNomeUsuario")?.value || "",
-        email: document.getElementById("novoEmailUsuario")?.value || "",
-        senha: document.getElementById("novaSenhaUsuario")?.value || "",
-      };
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/usuarios`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          const usuarioCriado = await response.json();
-          localStorage.setItem("usuarioLogado", JSON.stringify(usuarioCriado));
-          alert(`Usuário registrado! Entrando como: ${usuarioCriado.nome}`);
-          location.reload();
-        } else {
-          const errText = await response.text();
-          alert(`Erro do Servidor (${response.status}): ${errText}`);
-        }
-      } catch (error) {
-        console.error("Erro no envio do usuário:", error);
-        alert("Erro de conexão com o servidor ao cadastrar usuário.");
-      }
-    });
-  }
-
-  // 4. Autenticação de Login (POST)
-  const loginForm = document.getElementById("loginForm");
-  if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        email: document.getElementById("loginEmail")?.value || "",
-        senha: document.getElementById("loginSenha")?.value || "",
-      };
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          const usuarioLogado = await response.json();
-          localStorage.setItem("usuarioLogado", JSON.stringify(usuarioLogado));
-          alert(`Bem-vindo(a) de volta, ${usuarioLogado.nome}!`);
-          location.reload();
-        } else {
-          const errText = await response.text();
-          alert(`Falha no login: ${errText || "E-mail ou senha inválidos."}`);
-        }
-      } catch (error) {
-        console.error("Erro no login:", error);
-        alert("Erro ao tentar conectar ao servidor para realizar o login.");
-      }
-    });
-  }
-
-  // Chamadas Iniciais
-  carregarEspacos();
-  carregarAgendamentos();
-});
-
-// --- GESTÃO DE SESSÃO / LOCALSTORAGE ---
-function obterUsuarioLogado() {
-  const usuarioSalvo = localStorage.getItem("usuarioLogado");
-  return usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
+// --- FUNÇÃO AUXILIAR DE VERIFICAÇÃO ADMIN ---
+function eAdmin(user) {
+  if (!user) return false;
+  const permissao = user.role || user.tipoPermissao;
+  return permissao && permissao.toUpperCase() === "ADMIN";
 }
 
-function verificarSessaoUsuario() {
-  const usuario = obterUsuarioLogado();
-  const infoDiv = document.getElementById("usuarioLogadoInfo");
-  const nomeSpan = document.getElementById("nomeUsuarioLogado");
-  const btnEntrar = document.getElementById("btnEntrarHeader");
+// --- NAVEGAÇÃO ENTRE TELAS ---
+function navegarPara(screenId) {
+  const screens = [
+    "screenHome",
+    "screenLogin",
+    "screenRegister",
+    "screenAdminLogin",
+    "appContainer",
+  ];
 
-  if (usuario) {
-    if (infoDiv && nomeSpan) {
-      nomeSpan.textContent = `${usuario.nome} (ID: ${usuario.id})`;
-      infoDiv.style.display = "flex";
+  screens.forEach((s) => {
+    const el = document.getElementById(s);
+    if (el) {
+      if (s === "appContainer") {
+        el.style.display = s === screenId ? "flex" : "none";
+      } else if (s === "screenHome") {
+        el.style.display = s === screenId ? "block" : "none";
+      } else {
+        el.style.display = s === screenId ? "flex" : "none";
+      }
     }
-    if (btnEntrar) btnEntrar.style.display = "none";
+  });
+
+  if (screenId === "appContainer") {
+    setTimeout(() => {
+      if (!map) inicializarMapa();
+      else map.invalidateSize();
+    }, 200);
+  }
+}
+
+// --- CONTROLE DE SESSÃO ---
+function obterUsuarioLogado() {
+  const user = localStorage.getItem("usuarioLogado");
+  return user ? JSON.parse(user) : null;
+}
+
+function verificarSessao() {
+  const user = obterUsuarioLogado();
+  if (user) {
+    document.getElementById("userDisplayName").textContent = user.nome;
+    const badge = document.getElementById("userRoleBadge");
+    const btnAdminEspaco = document.getElementById("btnCadastrarEspacoAdmin");
+
+    if (eAdmin(user)) {
+      if (badge) badge.innerHTML = `<span class="admin-badge">ADMIN</span>`;
+      if (btnAdminEspaco) btnAdminEspaco.style.display = "inline-flex";
+    } else {
+      if (badge) badge.innerHTML = ``;
+      if (btnAdminEspaco) btnAdminEspaco.style.display = "none";
+    }
+
+    navegarPara("appContainer");
+    carregarEspacos();
+    carregarAgendamentosSidebar();
   } else {
-    if (infoDiv) infoDiv.style.display = "none";
-    if (btnEntrar) btnEntrar.style.display = "inline-flex";
+    // Redireciona para a Home se o usuário não estiver autenticado
+    navegarPara("screenHome");
   }
 }
 
@@ -210,219 +76,315 @@ function logoutUsuario() {
   location.reload();
 }
 
-// --- FUNÇÕES DE CONTROLE DE MODAIS ---
-function abrirModalAgendamento(espacoId = null) {
-  const usuario = obterUsuarioLogado();
+// --- DOM READY ---
+document.addEventListener("DOMContentLoaded", () => {
+  verificarSessao();
 
-  if (!usuario) {
-    alert(
-      "Você precisa cadastrar ou entrar com um usuário antes de agendar um espaço.",
-    );
-    abrirModalLogin();
-    return;
-  }
+  // Login Comum
+  document
+    .getElementById("formLogin")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await autenticarUsuario(
+        document.getElementById("loginEmail").value,
+        document.getElementById("loginSenha").value
+      );
+    });
 
-  const inputNomeExibicao = document.getElementById("nomeUsuarioExibicao");
-  const inputUsuarioId = document.getElementById("usuarioId");
+  // Login Admin
+  document
+    .getElementById("formAdminLogin")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await autenticarUsuario(
+        document.getElementById("adminEmail").value,
+        document.getElementById("adminSenha").value
+      );
+    });
 
-  if (inputNomeExibicao)
-    inputNomeExibicao.value = `${usuario.nome} (ID: ${usuario.id})`;
-  if (inputUsuarioId) inputUsuarioId.value = usuario.id;
+  // Registro de Usuário (Comum ou Admin)
+  document
+    .getElementById("formRegister")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  const modal = document.getElementById("modalAgendamento");
-  if (modal) modal.style.display = "flex";
+      const roleSelecionada = document.getElementById("regRole")?.value || "USER";
 
-  if (espacoId) {
-    const inputEspaco = document.getElementById("espacoId");
-    if (inputEspaco) inputEspaco.value = espacoId;
-  }
-}
+      const payload = {
+        nome: document.getElementById("regNome").value,
+        email: document.getElementById("regEmail").value,
+        senha: document.getElementById("regSenha").value,
+        role: roleSelecionada,
+        tipoPermissao: roleSelecionada
+      };
 
-function fecharModalAgendamento() {
-  const modal = document.getElementById("modalAgendamento");
-  if (modal) modal.style.display = "none";
-}
+      try {
+        const res = await fetch(`${API_BASE_URL}/usuarios`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-function abrirModalEspaco(lat, lng) {
-  const inputLat = document.getElementById("novoLat");
-  const inputLng = document.getElementById("novoLng");
-  const modal = document.getElementById("modalCriarEspaco");
-
-  if (inputLat) inputLat.value = lat.toFixed(6);
-  if (inputLng) inputLng.value = lng.toFixed(6);
-  if (modal) modal.style.display = "flex";
-}
-
-function fecharModalEspaco() {
-  const modal = document.getElementById("modalCriarEspaco");
-  const form = document.getElementById("espacoForm");
-  if (modal) modal.style.display = "none";
-  if (form) form.reset();
-}
-
-function abrirModalUsuario() {
-  const modal = document.getElementById("modalCriarUsuario");
-  if (modal) modal.style.display = "flex";
-}
-
-function fecharModalUsuario() {
-  const modal = document.getElementById("modalCriarUsuario");
-  const form = document.getElementById("usuarioForm");
-  if (modal) modal.style.display = "none";
-  if (form) form.reset();
-}
-
-function abrirModalLogin() {
-  const modal = document.getElementById("modalLogin");
-  if (modal) modal.style.display = "flex";
-}
-
-function fecharModalLogin() {
-  const modal = document.getElementById("modalLogin");
-  const form = document.getElementById("loginForm");
-  if (modal) modal.style.display = "none";
-  if (form) form.reset();
-}
-
-// --- CONSULTA API DE ESPAÇOS (GET) ---
-async function carregarEspacos() {
-  const listaEspacos = document.getElementById("listaEspacos");
-  const select = document.getElementById("espacoId");
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/espacos-publicos`);
-    if (!response.ok) throw new Error(`HTTP: ${response.status}`);
-
-    const espacos = await response.json();
-
-    if (select)
-      select.innerHTML = '<option value="">Selecione um local</option>';
-    if (listaEspacos) listaEspacos.innerHTML = "";
-    if (markersGroup) markersGroup.clearLayers();
-
-    if (!espacos || espacos.length === 0) {
-      if (listaEspacos) {
-        listaEspacos.innerHTML = `<p style="color: #64748b; font-size: 14px;">Nenhum espaço cadastrado.</p>`;
-      }
-      return;
-    }
-
-    espacos.forEach((espaco) => {
-      if (espaco.latitude && espaco.longitude && markersGroup) {
-        const marker = L.marker([espaco.latitude, espaco.longitude]);
-
-        const popupContent = `
-          <div style="text-align: center;">
-            <b style="font-size: 14px;">${espaco.nome}</b><br>
-            <span style="font-size: 12px; color: #64748b;">${espaco.tipo}</span><br>
-            <p style="margin: 6px 0; font-size: 12px;">${espaco.descricao || ""}</p>
-            <button onclick="abrirModalAgendamento(${espaco.id})" 
-                    style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-              Agendar Aqui
-            </button>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent);
-        markersGroup.addLayer(marker);
-
-        if (listaEspacos) {
-          const cardItem = document.createElement("div");
-          cardItem.style.padding = "10px";
-          cardItem.style.marginBottom = "8px";
-          cardItem.style.border = "1px solid #e2e8f0";
-          cardItem.style.borderRadius = "8px";
-          cardItem.style.cursor = "pointer";
-          cardItem.innerHTML = `
-            <strong style="display:block; font-size:14px; color: #2563eb;">${espaco.nome}</strong>
-            <span style="font-size:12px; color:#64748b;">${espaco.tipo}</span>
-          `;
-          cardItem.onclick = () => {
-            map.setView([espaco.latitude, espaco.longitude], 15);
-            marker.openPopup();
-          };
-          listaEspacos.appendChild(cardItem);
+        if (res.ok) {
+          alert(
+            roleSelecionada === "ADMIN"
+              ? "Conta de Administrador criada com sucesso! Faça login."
+              : "Conta de Usuário criada com sucesso! Faça login."
+          );
+          navegarPara("screenLogin");
+        } else {
+          alert("Erro ao registrar usuário.");
         }
-      }
-
-      if (select) {
-        const option = document.createElement("option");
-        option.value = espaco.id;
-        option.textContent = `${espaco.nome} (${espaco.tipo})`;
-        select.appendChild(option);
+      } catch (err) {
+        alert("Erro de conexão com o servidor.");
       }
     });
-  } catch (error) {
-    console.error("Erro ao carregar espaços:", error);
+
+  // Form Agendamento
+  document
+    .getElementById("agendamentoForm")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = obterUsuarioLogado();
+      if (!user) return;
+
+      const payload = {
+        dataHoraInicio: document.getElementById("agendamentoInicio").value,
+        dataHoraFim: document.getElementById("agendamentoFim").value,
+        usuario: { id: user.id },
+        espacoPublico: {
+          id: parseInt(document.getElementById("agendamentoEspacoId").value),
+        },
+      };
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/agendamentos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          alert("Agendamento realizado!");
+          fecharModalAgendamento();
+          carregarAgendamentosSidebar();
+        } else {
+          const txt = await res.text();
+          alert(`Erro: ${txt}`);
+        }
+      } catch (err) {
+        alert("Erro ao conectar com o servidor.");
+      }
+    });
+
+  // Form Espaço (ADMIN ONLY)
+  document
+    .getElementById("espacoForm")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = obterUsuarioLogado();
+      if (!eAdmin(user)) {
+        alert("Apenas administradores podem cadastrar espaços.");
+        return;
+      }
+
+      const payload = {
+        nome: document.getElementById("novoNome").value,
+        tipo: document.getElementById("novoTipo").value,
+        latitude: parseFloat(document.getElementById("novoLat").value),
+        longitude: parseFloat(document.getElementById("novoLng").value),
+      };
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/espacos-publicos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          alert("Espaço cadastrado pelo Admin!");
+          fecharModalEspaco();
+          carregarEspacos();
+        } else {
+          alert("Erro ao cadastrar espaço.");
+        }
+      } catch (err) {
+        alert("Erro de comunicação com o servidor.");
+      }
+    });
+});
+
+// --- AUTENTICAÇÃO ---
+async function autenticarUsuario(email, senha) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/usuarios/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha }),
+    });
+
+    if (res.ok) {
+      const user = await res.json();
+      localStorage.setItem("usuarioLogado", JSON.stringify(user));
+      verificarSessao();
+    } else {
+      alert("Credenciais inválidas.");
+    }
+  } catch (err) {
+    alert("Erro de conexão ao autenticar.");
   }
 }
 
-// --- CONSULTA E DELEÇÃO DE AGENDAMENTOS ---
-async function carregarAgendamentos() {
-  const tabela = document.getElementById("tabelaAgendamentos");
-  if (!tabela) return;
+// --- MAPA ---
+function inicializarMapa() {
+  if (map) {
+    map.remove();
+  }
 
-  const usuarioLogado = obterUsuarioLogado();
+  map = L.map("map").setView([-27.81, -50.32], 13);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 20,
+  }).addTo(map);
+
+  markersGroup = L.layerGroup().addTo(map);
+
+  map.on("click", (e) => {
+    const user = obterUsuarioLogado();
+
+    if (eAdmin(user)) {
+      const inputLat = document.getElementById("novoLat");
+      const inputLng = document.getElementById("novoLng");
+      const modal = document.getElementById("modalCriarEspaco");
+
+      if (inputLat && inputLng && modal) {
+        inputLat.value = e.latlng.lat.toFixed(6);
+        inputLng.value = e.latlng.lng.toFixed(6);
+        modal.style.display = "flex";
+      } else {
+        console.error(
+          "Campos da modal de cadastro de espaço não foram encontrados no HTML."
+        );
+      }
+    } else {
+      alert(
+        "Apenas usuários administradores podem registrar novos espaços no mapa."
+      );
+    }
+  });
+}
+
+// --- CONSULTAS API ---
+async function carregarEspacos() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/espacos-publicos`);
+    if (!res.ok) return;
+
+    const espacos = await res.json();
+    const select = document.getElementById("agendamentoEspacoId");
+    if (select)
+      select.innerHTML = '<option value="">Selecione um local</option>';
+    if (markersGroup) markersGroup.clearLayers();
+
+    espacos.forEach((e) => {
+      if (select) {
+        select.innerHTML += `<option value="${e.id}">${e.nome} (${e.tipo})</option>`;
+      }
+      if (e.latitude && e.longitude && markersGroup) {
+        const marker = L.marker([e.latitude, e.longitude]);
+        marker.bindPopup(
+          `<b>${e.nome}</b><br>${e.tipo}<br><button onclick="abrirModalAgendamento(${e.id})" style="margin-top:6px; cursor:pointer;">Agendar</button>`
+        );
+        markersGroup.addLayer(marker);
+      }
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function carregarAgendamentosSidebar() {
+  const container = document.getElementById("sidebarListaAgendamentos");
+  if (!container) return;
+
+  const user = obterUsuarioLogado();
 
   try {
-    const response = await fetch(`${API_BASE_URL}/agendamentos`);
-    if (!response.ok) throw new Error("Erro na requisição");
+    const res = await fetch(`${API_BASE_URL}/agendamentos`);
+    if (!res.ok) return;
 
-    const agendamentos = await response.json();
-    tabela.innerHTML = "";
+    const agendamentos = await res.json();
+    container.innerHTML = "";
 
     if (!agendamentos || agendamentos.length === 0) {
-      tabela.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">Nenhum agendamento encontrado.</td></tr>`;
+      container.innerHTML = `<p style="color: var(--text-muted); font-size: 13px;">Nenhum agendamento ativo.</p>`;
       return;
     }
 
     agendamentos.forEach((a) => {
-      const inicio = new Date(a.dataHoraInicio).toLocaleString("pt-BR");
-      const fim = new Date(a.dataHoraFim).toLocaleString("pt-BR");
+      const inicio = new Date(a.dataHoraInicio).toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+      const ehDonoOuAdmin = user && (a.usuario?.id === user.id || eAdmin(user));
 
-      const idDonoAgendamento = a.usuario ? a.usuario.id : null;
-      const ehDono = usuarioLogado && idDonoAgendamento === usuarioLogado.id;
-
-      const botaoDeletar = ehDono
-        ? `<button class="btn-danger" onclick="deletarAgendamento(${a.id})"><i class="fa-solid fa-trash"></i> Cancelar</button>`
-        : `<span style="color: #94a3b8; font-size: 12px;">-</span>`;
-
-      const linha = `
-        <tr>
-          <td>#${a.id}</td>
-          <td><strong>${a.usuario ? a.usuario.nome || "ID: " + a.usuario.id : "Usuário " + (a.usuario?.id || "N/A")}</strong></td>
-          <td><span class="badge">${a.espacoPublico ? a.espacoPublico.nome : "Local ID: " + (a.espacoPublico?.id || "N/A")}</span></td>
-          <td>${inicio}</td>
-          <td>${fim}</td>
-          <td>${botaoDeletar}</td>
-        </tr>
+      const card = document.createElement("div");
+      card.className = "agendamento-card";
+      card.innerHTML = `
+        <header>
+          <span>${a.espacoPublico?.nome || "Espaço"}</span>
+          <small>#${a.id}</small>
+        </header>
+        <div><strong>Por:</strong> ${a.usuario?.nome || "Usuário"}</div>
+        <div><strong>Início:</strong> ${inicio}</div>
+        ${
+          ehDonoOuAdmin
+            ? `<button class="btn-danger" style="margin-top: 8px; width:100%;" onclick="cancelarAgendamento(${a.id})">Cancelar</button>`
+            : ""
+        }
       `;
-      tabela.innerHTML += linha;
+      container.appendChild(card);
     });
-  } catch (error) {
-    console.error("Erro ao carregar agendamentos:", error);
+  } catch (err) {
+    console.error(err);
   }
 }
 
-async function deletarAgendamento(idAgendamento) {
-  if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
-
+async function cancelarAgendamento(id) {
+  if (!confirm("Deseja cancelar esta reserva?")) return;
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/agendamentos/${idAgendamento}`,
-      {
-        method: "DELETE",
-      },
-    );
-
-    if (response.ok || response.status === 204) {
-      alert("Agendamento cancelado com sucesso!");
-      carregarAgendamentos();
+    const res = await fetch(`${API_BASE_URL}/agendamentos/${id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      carregarAgendamentosSidebar();
     } else {
-      alert(`Erro ao cancelar agendamento (${response.status})`);
+      alert("Erro ao cancelar.");
     }
-  } catch (error) {
-    console.error("Erro ao deletar:", error);
-    alert("Erro de conexão com o servidor ao excluir.");
+  } catch (err) {
+    alert("Erro ao conectar.");
   }
+}
+
+// --- MODAIS ---
+function abrirModalAgendamento(espacoId = null) {
+  document.getElementById("modalAgendamento").style.display = "flex";
+  if (espacoId) document.getElementById("agendamentoEspacoId").value = espacoId;
+}
+
+function fecharModalAgendamento() {
+  document.getElementById("modalAgendamento").style.display = "none";
+}
+
+function abrirModalEspacoManual() {
+  alert(
+    "Clique em qualquer ponto do mapa para definir a posição do novo espaço!"
+  );
+}
+
+function fecharModalEspaco() {
+  document.getElementById("modalCriarEspaco").style.display = "none";
 }

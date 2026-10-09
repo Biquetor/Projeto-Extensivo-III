@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*") // Permite chamadas do frontend sem bloqueio de CORS
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
     @Autowired

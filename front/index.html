@@ -1,15 +1,44 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Comunidade Viva - Gestão & Agendamentos</title>
+    <title>Comunidade Viva - Gestão de Espaços</title>
 
-    <!-- Fonts & Icons -->
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
     />
+
+    <!-- Lucide Icons & FontAwesome -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -23,154 +52,68 @@
 
     <style>
       :root {
+        --sidebar-width: 340px;
         --bg-primary: #f8fafc;
         --bg-card: #ffffff;
         --text-main: #0f172a;
         --text-muted: #64748b;
+        --border-color: #e2e8f0;
         --accent-color: #2563eb;
         --accent-hover: #1d4ed8;
-        --border-color: #e2e8f0;
-        --radius: 12px;
-        --shadow:
-          0 10px 15px -3px rgba(0, 0, 0, 0.05),
-          0 4px 6px -4px rgba(0, 0, 0, 0.05);
       }
 
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+      body {
         font-family: "Inter", sans-serif;
       }
-      body {
-        background-color: var(--bg-primary);
-        color: var(--text-main);
-        padding: 24px;
-      }
 
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
+      ::-webkit-scrollbar {
+        width: 6px;
       }
-
-      header h1 {
-        font-size: 24px;
-        font-weight: 700;
-        color: #1e293b;
+      ::-webkit-scrollbar-track {
+        background: transparent;
       }
-      header p {
-        color: var(--text-muted);
-        font-size: 14px;
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
       }
-
-      .user-status {
-        background: #e0e7ff;
-        color: #3730a3;
-        padding: 8px 14px;
-        border-radius: var(--radius);
-        font-size: 13px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .btn-primary {
-        background-color: var(--accent-color);
-        color: white;
-        border: none;
-        padding: 10px 18px;
-        border-radius: var(--radius);
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-      }
-      .btn-primary:hover {
-        background-color: var(--accent-hover);
-        transform: translateY(-1px);
-      }
-
-      .dashboard-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 24px;
-        margin-bottom: 24px;
-      }
-
-      @media (max-width: 992px) {
-        .dashboard-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .card {
-        background: var(--bg-card);
-        border-radius: var(--radius);
-        padding: 20px;
-        border: 1px solid var(--border-color);
-        box-shadow: var(--shadow);
-      }
-
-      .card-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      .dark ::-webkit-scrollbar-thumb {
+        background: #334155;
       }
 
       #map {
-        height: 420px;
-        border-radius: var(--radius);
         width: 100%;
-        z-index: 1;
+        height: 100%;
       }
 
-      .table-container {
-        overflow-x: auto;
+      .leaflet-popup-content-wrapper {
+        border-radius: 12px !important;
+        padding: 4px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-        font-size: 14px;
-      }
-      th {
-        background: #f1f5f9;
+
+      .agendamento-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
         padding: 12px;
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-      td {
-        padding: 14px 12px;
-        border-bottom: 1px solid var(--border-color);
-      }
-      tr:hover {
-        background-color: #f8fafc;
+        margin-bottom: 10px;
+        font-size: 13px;
       }
 
-      .badge {
-        background: #dbeafe;
-        color: #1e40af;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
+      .admin-badge {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
       }
 
       .modal-backdrop {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(15, 23, 42, 0.5);
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
         display: none;
         align-items: center;
         justify-content: center;
@@ -180,246 +123,734 @@
       .modal {
         background: white;
         padding: 28px;
-        border-radius: var(--radius);
+        border-radius: 16px;
         width: 100%;
         max-width: 480px;
-        box-shadow: var(--shadow);
+      }
+      .dark .modal {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
       }
 
-      .form-group {
-        margin-bottom: 16px;
-      }
-      .form-group label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 6px;
-      }
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 14px;
-        outline: none;
-      }
-      .form-group input:focus,
-      .form-group select:focus {
-        border-color: var(--accent-color);
-      }
-
-      .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 20px;
-      }
-      .btn-secondary {
-        background: #e2e8f0;
+      .btn-primary {
+        background: #2563eb;
+        color: white;
         border: none;
-        padding: 10px 16px;
+        padding: 10px 18px;
         border-radius: 8px;
-        cursor: pointer;
         font-weight: 600;
+        cursor: pointer;
+        width: 100%;
       }
+
       .btn-danger {
         background: #fee2e2;
         color: #991b1b;
         border: none;
-        padding: 6px 10px;
+        padding: 6px 12px;
         border-radius: 6px;
         cursor: pointer;
-        font-weight: 600;
         font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .btn-danger:hover {
-        background: #fca5a5;
+        font-weight: 600;
       }
     </style>
   </head>
-  <body>
-    <!-- Cabeçalho Limpo sem duplicidade -->
-    <header>
-      <div>
-        <h1>
-          <i class="fa-solid fa-city" style="color: var(--accent-color)"></i>
-          Comunidade Viva
-        </h1>
-        <p>Gestão de Espaços Públicos & Agendamentos Comunitários</p>
-      </div>
+  <body
+    class="h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 antialiased flex flex-col overflow-x-hidden"
+  >
+    <!-- BOTÃO FIXO DE MODO ESCURO -->
+    <button
+      onclick="document.documentElement.classList.toggle('dark')"
+      class="fixed bottom-4 right-4 z-[10001] p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-xl text-slate-700 dark:text-slate-200 hover:scale-110 transition-all"
+      title="Alternar Tema"
+    >
+      <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+      <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+    </button>
 
-      <div style="display: flex; align-items: center; gap: 12px">
-        <!-- Indicador de Sessão Ativa -->
-        <div id="usuarioLogadoInfo" class="user-status" style="display: none">
-          <i class="fa-solid fa-user-check"></i>
-          <span id="nomeUsuarioLogado"></span>
-          <button class="btn-danger" onclick="logoutUsuario()" title="Sair">
-            Sair
-          </button>
-        </div>
-
-        <!-- Botão Entrar -->
-        <button id="btnEntrarHeader" class="btn-secondary" onclick="abrirModalLogin()">
-          <i class="fa-solid fa-right-to-bracket"></i> Entrar
-        </button>
-
-        <button class="btn-secondary" onclick="abrirModalUsuario()">
-          <i class="fa-solid fa-user-plus"></i> Novo Usuário
-        </button>
-        <button class="btn-primary" onclick="abrirModalAgendamento()">
-          <i class="fa-solid fa-plus"></i> Novo Agendamento
-        </button>
-      </div>
-    </header>
-
-    <!-- Grade Principal -->
-    <div class="dashboard-grid">
-      <!-- Mapa -->
-      <div class="card">
-        <div class="card-title">
-          <i
-            class="fa-solid fa-map-location-dot"
-            style="color: var(--accent-color)"
-          ></i>
-          Mapa de Locais
-        </div>
-        <div id="map"></div>
-      </div>
-
-      <!-- Resumo de Locais Registados -->
-      <div class="card">
-        <div class="card-title">
-          <i
-            class="fa-solid fa-location-dot"
-            style="color: var(--accent-color)"
-          ></i>
-          Espaços Disponíveis
-        </div>
+    <!-- TELA HOME (PÁGINA INICIAL) -->
+    <div
+      id="screenHome"
+      class="w-full min-h-screen flex flex-col justify-between"
+    >
+      <!-- Header / Navbar da Home -->
+      <header
+        class="w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50"
+      >
         <div
-          id="listaEspacos"
-          style="
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 400px;
-            overflow-y: auto;
-          "
+          class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between"
         >
-          <p style="color: var(--text-muted); font-size: 14px">
-            Carregando espaços...
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabela com Locais Agendados -->
-    <div class="card">
-      <div class="card-title">
-        <i
-          class="fa-solid fa-calendar-check"
-          style="color: var(--accent-color)"
-        ></i>
-        Locais Agendados
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Usuário</th>
-              <th>Local / Espaço</th>
-              <th>Início do Agendamento</th>
-              <th>Fim do Agendamento</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaAgendamentos">
-            <tr>
-              <td
-                colspan="6"
-                style="text-align: center; color: var(--text-muted)"
-              >
-                Nenhum agendamento encontrado.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Modal para Criar Agendamento -->
-    <div class="modal-backdrop" id="modalAgendamento">
-      <div class="modal">
-        <h3 style="margin-bottom: 18px">
-          <i class="fa-regular fa-calendar-plus"></i> Reservar Espaço
-        </h3>
-        <form id="agendamentoForm">
-          <div class="form-group">
-            <label for="nomeUsuarioExibicao">Usuário Responsável:</label>
-            <input
-              type="text"
-              id="nomeUsuarioExibicao"
-              readonly
-              style="background: #f1f5f9; font-weight: 600"
-            />
-            <input type="hidden" id="usuarioId" />
-          </div>
-
-          <div class="form-group">
-            <label for="espacoId">Selecione o Local:</label>
-            <select id="espacoId" required>
-              <option value="">A carregar...</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="dataInicio">Data e Hora de Início:</label>
-            <input type="datetime-local" id="dataInicio" required />
-          </div>
-
-          <div class="form-group">
-            <label for="dataFim">Data e Hora de Término:</label>
-            <input type="datetime-local" id="dataFim" required />
-          </div>
-
-          <div class="modal-actions">
-            <button
-              type="button"
-              class="btn-secondary"
-              onclick="fecharModalAgendamento()"
+          <div class="flex items-center gap-3">
+            <div
+              class="p-2.5 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-500/20"
             >
-              Cancelar
+              <i data-lucide="map-pin" class="w-6 h-6"></i>
+            </div>
+            <span
+              class="text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+              >Comunidade Viva</span
+            >
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              onclick="navegarPara('screenLogin')"
+              class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 transition-colors"
+            >
+              Fazer Login
             </button>
-            <button type="submit" class="btn-primary">Confirmar Reserva</button>
+            <button
+              onclick="navegarPara('screenRegister')"
+              class="px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02]"
+            >
+              Cadastre-se
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Hero Section -->
+      <main class="flex-1 max-w-7xl mx-auto px-6 py-12 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div class="space-y-6">
+            <div
+              class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-semibold"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Gestão Inteligente
+              de Espaços Públicos
+            </div>
+            <h1
+              class="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight"
+            >
+              Conectando pessoas a
+              <span
+                class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                >espaços comunitários</span
+              >.
+            </h1>
+            <p
+              class="text-lg text-slate-600 dark:text-slate-400 leading-relaxed"
+            >
+              O Comunidade Viva é a plataforma completa para você mapear,
+              reservar e gerenciar praças, quadras, parques e centros
+              comunitários da sua cidade em tempo real.
+            </p>
+            <div class="flex flex-wrap gap-4 pt-4">
+              <button
+                onclick="navegarPara('screenRegister')"
+                class="px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] flex items-center gap-2"
+              >
+                Começar Agora <i data-lucide="arrow-right" class="w-5 h-5"></i>
+              </button>
+              <button
+                onclick="navegarPara('screenAdminLogin')"
+                class="px-7 py-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-2"
+              >
+                <i
+                  data-lucide="shield-check"
+                  class="w-5 h-5 text-amber-500"
+                ></i>
+                Painel de Administrador
+              </button>
+            </div>
+          </div>
+
+          <!-- Card de Apresentação com Imagem -->
+          <div class="relative">
+            <div
+              class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl blur-xl opacity-30"
+            ></div>
+            <div
+              class="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1519331379826-f10be5486c6f?q=80&w=1200&auto=format&fit=crop"
+                alt="Praça pública e espaço comunitário"
+                class="w-full h-80 object-cover"
+              />
+              <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <span
+                    class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400"
+                    >Mapeamento Interativo</span
+                  >
+                  <span
+                    class="text-xs px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold rounded-full"
+                    >Em Tempo Real</span
+                  >
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">
+                  Visualize e Agende com Praticidade
+                </h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  Encontre o local ideal no mapa, confira os horários
+                  disponíveis e faça seu agendamento sem burocracia.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção de Funcionalidades em Cards -->
+        <div class="mt-24">
+          <div class="text-center max-w-2xl mx-auto mb-12">
+            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">
+              Como Funciona a Plataforma
+            </h2>
+            <p class="text-slate-500 dark:text-slate-400 mt-2">
+              Soluções pensadas para cidadãos e gestores de espaços urbanos
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Card 1 -->
+            <div
+              class="p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all"
+            >
+              <div
+                class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-6 font-bold"
+              >
+                <i data-lucide="map" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                Mapa Interativo
+              </h3>
+              <p
+                class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed"
+              >
+                Navegue pelo mapa da região para descobrir praças, quadras de
+                esporte e centros comunitários perto de você.
+              </p>
+            </div>
+
+            <!-- Card 2 -->
+            <div
+              class="p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all"
+            >
+              <div
+                class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-6 font-bold"
+              >
+                <i data-lucide="calendar" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                Agendamentos Simples
+              </h3>
+              <p
+                class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed"
+              >
+                Escolha a data e o horário desejados e garanta o uso do espaço
+                público para seus eventos e treinos.
+              </p>
+            </div>
+
+            <!-- Card 3 -->
+            <div
+              class="p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all"
+            >
+              <div
+                class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-6 font-bold"
+              >
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                Gestão Administrativa
+              </h3>
+              <p
+                class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed"
+              >
+                Administradores podem marcar novas coordenadas no mapa e
+                gerenciar todas as solicitações ativas com controle total.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Footer da Home -->
+      <footer
+        class="w-full border-t border-slate-200 dark:border-slate-800 py-8 bg-white dark:bg-slate-900 mt-12"
+      >
+        <div
+          class="max-w-7xl mx-auto px-6 text-center text-xs text-slate-500 dark:text-slate-400"
+        >
+          Comunidade Viva &copy; Gestão Inteligente de Espaços Públicos.
+        </div>
+      </footer>
+    </div>
+
+    <!-- TELA 1: LOGIN -->
+    <div
+      id="screenLogin"
+      class="auth-screen fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[10000] p-4"
+      style="display: none"
+    >
+      <div
+        class="auth-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600"
+        ></div>
+        <h2
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-2"
+        >
+          <i data-lucide="building-2" class="w-6 h-6 text-blue-600"></i>
+          Comunidade Viva
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          Acesse sua conta para agendar espaços públicos
+        </p>
+
+        <form id="formLogin" class="space-y-4">
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >E-mail:</label
+            >
+            <input
+              type="email"
+              id="loginEmail"
+              required
+              placeholder="seu@email.com"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >Senha:</label
+            >
+            <input
+              type="password"
+              id="loginSenha"
+              required
+              placeholder="••••••••"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm hover:shadow transition-all text-sm"
+          >
+            Entrar
+          </button>
+
+          <div
+            class="auth-toggle text-center text-xs text-slate-500 dark:text-slate-400 pt-3 space-y-2"
+          >
+            <div>
+              Não tem uma conta?
+              <a
+                onclick="navegarPara('screenRegister')"
+                class="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                >Cadastre-se</a
+              >
+            </div>
+            <div>
+              <a
+                onclick="navegarPara('screenAdminLogin')"
+                class="text-amber-600 dark:text-amber-400 font-semibold hover:underline cursor-pointer flex items-center justify-center gap-1"
+              >
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Acesso
+                Administrativo
+              </a>
+            </div>
+            <div class="pt-2">
+              <a
+                onclick="navegarPara('screenHome')"
+                class="text-slate-400 hover:underline cursor-pointer"
+                >← Voltar para a Home</a
+              >
+            </div>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Modal para Criar Novo Espaço Público -->
-    <div class="modal-backdrop" id="modalCriarEspaco">
-      <div class="modal">
-        <h3 style="margin-bottom: 18px">
-          <i class="fa-solid fa-map-pin"></i> Cadastrar Novo Espaço Público
-        </h3>
-        <form id="espacoForm">
+    <!-- TELA 2: REGISTRO DE USUÁRIO -->
+    <div
+      id="screenRegister"
+      class="auth-screen fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[10000] p-4"
+      style="display: none"
+    >
+      <div
+        class="auth-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 to-teal-500"
+        ></div>
+        <h2
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1"
+        >
+          Criar Conta
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          Cadastre-se para solicitar agendamentos ou gerenciar espaços
+        </p>
+
+        <form id="formRegister" class="space-y-4">
           <div class="form-group">
-            <label for="novoNome">Nome do Local:</label>
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >Nome Completo:</label
+            >
             <input
               type="text"
-              id="novoNome"
+              id="regNome"
               required
-              placeholder="Ex: Praça do Bairro"
+              placeholder="Seu nome"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
           <div class="form-group">
-            <label for="novoTipo">Tipo de Espaço:</label>
-            <select id="novoTipo" required>
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >E-mail:</label
+            >
+            <input
+              type="email"
+              id="regEmail"
+              required
+              placeholder="seu@email.com"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >Senha:</label
+            >
+            <input
+              type="password"
+              id="regSenha"
+              required
+              placeholder="••••••••"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              for="regRole"
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >Tipo de Perfil:</label
+            >
+            <select
+              id="regRole"
+              required
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="USER">Usuário Comum (Apenas Agendamentos)</option>
+              <option value="ADMIN">
+                Administrador (Criar Espaços e Gerenciar)
+              </option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all text-sm"
+          >
+            Registrar
+          </button>
+
+          <div
+            class="auth-toggle text-center text-xs text-slate-500 pt-2 space-y-1"
+          >
+            <div>
+              Já possui conta?
+              <a
+                onclick="navegarPara('screenLogin')"
+                class="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                >Fazer Login</a
+              >
+            </div>
+            <div>
+              <a
+                onclick="navegarPara('screenHome')"
+                class="text-slate-400 hover:underline cursor-pointer"
+                >← Voltar para a Home</a
+              >
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TELA 3: LOGIN ADMIN -->
+    <div
+      id="screenAdminLogin"
+      class="auth-screen fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[10000] p-4"
+      style="display: none"
+    >
+      <div
+        class="auth-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"
+        ></div>
+        <h2
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1 flex items-center gap-2"
+        >
+          <i data-lucide="shield-check" class="w-6 h-6 text-amber-500"></i>
+          Login Administrador
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          Acesso exclusivo para gestão de espaços
+        </p>
+
+        <form id="formAdminLogin" class="space-y-4">
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >E-mail Admin:</label
+            >
+            <input
+              type="email"
+              id="adminEmail"
+              required
+              placeholder="admin@comunidade.com"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+              >Senha:</label
+            >
+            <input
+              type="password"
+              id="adminSenha"
+              required
+              placeholder="••••••••"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-sm transition-all text-sm"
+          >
+            Entrar como Admin
+          </button>
+
+          <div
+            class="auth-toggle text-center text-xs text-slate-500 pt-2 space-y-1"
+          >
+            <div>
+              <a
+                onclick="navegarPara('screenLogin')"
+                class="text-slate-600 dark:text-slate-400 font-medium hover:underline cursor-pointer"
+                >Voltar para Login Comum</a
+              >
+            </div>
+            <div>
+              <a
+                onclick="navegarPara('screenHome')"
+                class="text-slate-400 hover:underline cursor-pointer"
+                >← Voltar para a Home</a
+              >
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TELA 4: DASHBOARD PRINCIPAL -->
+    <div id="appContainer" class="w-full h-screen flex" style="display: none">
+      <aside
+        class="w-[340px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 shadow-lg"
+      >
+        <div
+          class="sidebar-header p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+        >
+          <h1
+            class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5"
+          >
+            <div
+              class="p-2 bg-blue-50 dark:bg-blue-950/50 rounded-lg text-blue-600 dark:text-blue-400"
+            >
+              <i data-lucide="map-pin" class="w-5 h-5"></i>
+            </div>
+            Comunidade Viva
+          </h1>
+        </div>
+
+        <div class="sidebar-content flex-1 overflow-y-auto p-5 space-y-4">
+          <button
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all text-sm"
+            onclick="abrirModalAgendamento()"
+          >
+            <i data-lucide="calendar-plus" class="w-4 h-4"></i> Novo Agendamento
+          </button>
+
+          <div
+            class="sidebar-section-title text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 pt-2"
+          >
+            Agendamentos Ativos
+          </div>
+          <div id="sidebarListaAgendamentos" class="space-y-2.5">
+            <p class="text-xs text-slate-400 italic">
+              Carregando agendamentos...
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="sidebar-footer p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 font-bold flex items-center justify-center text-sm"
+            >
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong
+                id="userDisplayName"
+                class="block text-sm font-semibold text-slate-900 dark:text-white leading-none"
+                >Usuário</strong
+              >
+              <div id="userRoleBadge" class="mt-1"></div>
+            </div>
+          </div>
+          <button
+            class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors text-xs font-semibold"
+            onclick="logoutUsuario()"
+            title="Sair"
+          >
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </aside>
+
+      <main class="flex-1 relative flex flex-col">
+        <div class="top-bar absolute top-4 right-4 z-[1000] flex gap-3">
+          <button
+            id="btnCadastrarEspacoAdmin"
+            class="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-md flex items-center gap-2 transition-all text-sm"
+            style="display: none"
+            onclick="abrirModalEspacoManual()"
+          >
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Cadastrar Espaço
+            (Admin)
+          </button>
+        </div>
+        <div id="map" class="w-full h-full"></div>
+      </main>
+    </div>
+
+    <!-- MODAL DE AGENDAMENTO -->
+    <div class="modal-backdrop" id="modalAgendamento">
+      <div
+        class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl"
+      >
+        <h3
+          class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"
+        >
+          <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i> Reservar
+          Espaço
+        </h3>
+        <form id="agendamentoForm" class="space-y-4">
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >Espaço Público:</label
+            >
+            <select
+              id="agendamentoEspacoId"
+              required
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Carregando espaços...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >Data e Hora de Início:</label
+            >
+            <input
+              type="datetime-local"
+              id="agendamentoInicio"
+              required
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >Data e Hora de Término:</label
+            >
+            <input
+              type="datetime-local"
+              id="agendamentoFim"
+              required
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              type="button"
+              class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all"
+              onclick="fecharModalAgendamento()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm"
+            >
+              Confirmar Reserva
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL CADASTRO DE ESPAÇO (ADMIN ONLY) -->
+    <div class="modal-backdrop" id="modalCriarEspaco">
+      <div
+        class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl"
+      >
+        <h3
+          class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"
+        >
+          <i data-lucide="map-pin" class="w-5 h-5 text-amber-500"></i> Novo
+          Espaço (Admin)
+        </h3>
+        <form id="espacoForm" class="space-y-4">
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >Nome do Local:</label
+            >
+            <input
+              type="text"
+              id="novoNome"
+              required
+              placeholder="Ex: Quadra Bairro Central"
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <div class="form-group">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >Tipo:</label
+            >
+            <select
+              id="novoTipo"
+              required
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500"
+            >
               <option value="PRACA">Praça</option>
               <option value="PARQUE">Parque</option>
               <option value="QUADRA">Quadra Esportiva</option>
@@ -427,144 +858,59 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="novaDescricao">Descrição:</label>
-            <input
-              type="text"
-              id="novaDescricao"
-              placeholder="Ex: Área verde com quadra"
-            />
-          </div>
-
-          <div style="display: flex; gap: 10px">
-            <div class="form-group" style="flex: 1">
-              <label>Latitude:</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label
+                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+                >Latitude:</label
+              >
               <input
                 type="text"
                 id="novoLat"
+                required
                 readonly
-                style="background: #f1f5f9"
+                class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono"
               />
             </div>
-            <div class="form-group" style="flex: 1">
-              <label>Longitude:</label>
+            <div class="form-group">
+              <label
+                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+                >Longitude:</label
+              >
               <input
                 type="text"
                 id="novoLng"
+                required
                 readonly
-                style="background: #f1f5f9"
+                class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono"
               />
             </div>
           </div>
 
-          <div class="modal-actions">
+          <div class="flex gap-3 pt-2">
             <button
               type="button"
-              class="btn-secondary"
+              class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all"
               onclick="fecharModalEspaco()"
             >
               Cancelar
             </button>
-            <button type="submit" class="btn-primary">Guardar Espaço</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal para Cadastrar Usuário -->
-    <div class="modal-backdrop" id="modalCriarUsuario">
-      <div class="modal">
-        <h3 style="margin-bottom: 18px">
-          <i class="fa-solid fa-user"></i> Cadastrar Novo Usuário
-        </h3>
-        <form id="usuarioForm">
-          <div class="form-group">
-            <label for="novoNomeUsuario">Nome Completo:</label>
-            <input
-              type="text"
-              id="novoNomeUsuario"
-              required
-              placeholder="Ex: João Silva"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="novoEmailUsuario">E-mail:</label>
-            <input
-              type="email"
-              id="novoEmailUsuario"
-              required
-              placeholder="Ex: joao@email.com"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="novaSenhaUsuario">Senha:</label>
-            <input
-              type="password"
-              id="novaSenhaUsuario"
-              required
-              placeholder="Digite sua senha"
-            />
-          </div>
-
-          <div class="modal-actions">
             <button
-              type="button"
-              class="btn-secondary"
-              onclick="fecharModalUsuario()"
+              type="submit"
+              class="flex-1 py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm"
             >
-              Cancelar
+              Salvar Espaço
             </button>
-            <button type="submit" class="btn-primary">Salvar Usuário</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Modal para Fazer Login -->
-    <div class="modal-backdrop" id="modalLogin">
-      <div class="modal">
-        <h3 style="margin-bottom: 18px">
-          <i class="fa-solid fa-right-to-bracket"></i> Entrar na Conta
-        </h3>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="loginEmail">E-mail:</label>
-            <input
-              type="email"
-              id="loginEmail"
-              required
-              placeholder="Seu e-mail cadastrado"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="loginSenha">Senha:</label>
-            <input
-              type="password"
-              id="loginSenha"
-              required
-              placeholder="Sua senha"
-            />
-          </div>
-
-          <div class="modal-actions">
-            <button
-              type="button"
-              class="btn-secondary"
-              onclick="fecharModalLogin()"
-            >
-              Cancelar
-            </button>
-            <button type="submit" class="btn-primary">Entrar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-   
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
     <script src="app.js"></script>
   </body>
 </html>
