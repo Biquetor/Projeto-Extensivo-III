@@ -154,6 +154,89 @@
         font-size: 12px;
         font-weight: 600;
       }
+
+      :root.dark {
+        --bg-primary: #0f172a;
+        --border-color: #334155;
+      }
+
+      .agendamento-card {
+        cursor: pointer;
+        margin-bottom: 0;
+      }
+
+      .modal.modal-largo {
+        max-width: 640px;
+      }
+
+      .nav-item.ativo {
+        background: #eff6ff;
+        color: #2563eb;
+      }
+      .dark .nav-item.ativo {
+        background: rgba(30, 58, 138, 0.35);
+        color: #93c5fd;
+      }
+
+      .chip-rolagem {
+        scrollbar-width: none;
+      }
+      .chip-rolagem::-webkit-scrollbar {
+        display: none;
+      }
+
+      .pin-preco {
+        background: white;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+        font: 700 12px "Inter", sans-serif;
+        padding: 5px 10px;
+        white-space: nowrap;
+        width: max-content;
+        transform: translate(-50%, -50%);
+        transition: transform 0.15s;
+      }
+      .pin-preco:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+      }
+      .leaflet-div-icon.pin-wrapper {
+        background: none;
+        border: none;
+      }
+
+      .toast-entrada {
+        animation: toast-entrada 0.25s ease-out;
+      }
+      @keyframes toast-entrada {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+      }
+
+      @media print {
+        body > *:not(#modalComprovante) {
+          display: none !important;
+        }
+        #modalComprovante {
+          position: static;
+          background: none;
+          backdrop-filter: none;
+          display: block !important;
+        }
+        #modalComprovante .modal {
+          box-shadow: none;
+          max-width: none;
+          max-height: none;
+        }
+        .sem-impressao {
+          display: none !important;
+        }
+      }
     </style>
   </head>
   <body
@@ -161,7 +244,7 @@
   >
     <!-- BOTÃO FIXO DE MODO ESCURO -->
     <button
-      onclick="document.documentElement.classList.toggle('dark')"
+      onclick="alternarTema()"
       class="fixed bottom-4 right-4 z-[10001] p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-xl text-slate-700 dark:text-slate-200 hover:scale-110 transition-all"
       title="Alternar Tema"
     >
@@ -188,7 +271,7 @@
               <i data-lucide="map-pin" class="w-6 h-6"></i>
             </div>
             <span
-              class="text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+              class="hidden sm:inline text-xl font-bold tracking-tight text-slate-900 dark:text-white"
               >Comunidade Viva</span
             >
           </div>
@@ -235,6 +318,20 @@
               reservar e gerenciar praças, quadras, parques e centros
               comunitários da sua cidade em tempo real.
             </p>
+            <form
+              id="formBuscaHome"
+              class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-lg"
+            >
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input id="homeBusca" type="text" aria-label="Buscar espaço" placeholder="Espaço ou bairro" class="w-full h-11 pl-9 pr-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <input id="homeData" type="date" aria-label="Data do evento" class="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input id="homeConvidados" type="number" min="1" aria-label="Número de convidados" placeholder="Convidados" class="h-11 sm:w-28 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="submit" class="h-11 px-5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                <i data-lucide="search" class="w-4 h-4"></i> Buscar
+              </button>
+            </form>
             <div class="flex flex-wrap gap-4 pt-4">
               <button
                 onclick="navegarPara('screenRegister')"
@@ -289,6 +386,27 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Espaços em Destaque -->
+        <div class="mt-24">
+          <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-3xl font-bold text-slate-900 dark:text-white">
+                Espaços em Destaque
+              </h2>
+              <p class="text-slate-500 dark:text-slate-400 mt-2">
+                Os locais mais bem avaliados para o seu próximo evento
+              </p>
+            </div>
+            <button
+              onclick="entrarNoCatalogo()"
+              class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+            >
+              Ver todos os espaços <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div id="homeDestaques" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
 
         <!-- Seção de Funcionalidades em Cards -->
@@ -429,6 +547,9 @@
             />
           </div>
 
+          <p class="text-[11px] text-center text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2">
+            Conta de demonstração: usuario@comunidade.com / usuario123
+          </p>
           <button
             type="submit"
             class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm hover:shadow transition-all text-sm"
@@ -631,6 +752,9 @@
             />
           </div>
 
+          <p class="text-[11px] text-center text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2">
+            Conta de demonstração: admin@comunidade.com / admin123
+          </p>
           <button
             type="submit"
             class="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-sm transition-all text-sm"
@@ -662,8 +786,14 @@
 
     <!-- TELA 4: DASHBOARD PRINCIPAL -->
     <div id="appContainer" class="w-full h-screen flex" style="display: none">
+      <div
+        id="sidebarFundo"
+        class="fixed inset-0 bg-slate-950/50 z-[1100] hidden"
+        onclick="alternarSidebar(false)"
+      ></div>
       <aside
-        class="w-[340px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 shadow-lg"
+        id="sidebar"
+        class="fixed lg:static inset-y-0 left-0 w-[340px] max-w-[85vw] shrink-0 -translate-x-full lg:translate-x-0 transition-transform bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-[1200] lg:z-10 shadow-lg"
       >
         <div
           class="sidebar-header p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
@@ -678,6 +808,14 @@
             </div>
             Comunidade Viva
           </h1>
+          <button
+            onclick="abrirNotificacoes()"
+            class="relative p-2 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Notificações"
+          >
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span class="contador-notificacoes hidden absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold items-center justify-center"></span>
+          </button>
         </div>
 
         <div class="sidebar-content flex-1 overflow-y-auto p-5 space-y-4">
@@ -688,16 +826,32 @@
             <i data-lucide="calendar-plus" class="w-4 h-4"></i> Novo Agendamento
           </button>
 
+          <nav class="space-y-1">
+            <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-nav="explorar" onclick="irParaExplorar('grade')">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i> Explorar Espaços
+            </button>
+            <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-nav="mapa" onclick="irParaExplorar('mapa')">
+              <i data-lucide="map" class="w-4 h-4"></i> Mapa
+            </button>
+            <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-nav="favoritos" onclick="mostrarView('favoritos')">
+              <i data-lucide="heart" class="w-4 h-4"></i> Favoritos
+            </button>
+            <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-nav="reservas" onclick="mostrarView('reservas')">
+              <i data-lucide="calendar-check" class="w-4 h-4"></i> Minhas Reservas
+            </button>
+            <button id="navAdmin" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-nav="admin" onclick="mostrarView('admin')" style="display: none">
+              <i data-lucide="shield-check" class="w-4 h-4 text-amber-500"></i> Painel Administrativo
+              <span id="navAdminPendentes" class="ml-auto hidden min-w-5 h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold items-center justify-center"></span>
+            </button>
+          </nav>
+
           <div
+            id="sidebarTituloAgendamentos"
             class="sidebar-section-title text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 pt-2"
           >
-            Agendamentos Ativos
+            Próximos Agendamentos
           </div>
-          <div id="sidebarListaAgendamentos" class="space-y-2.5">
-            <p class="text-xs text-slate-400 italic">
-              Carregando agendamentos...
-            </p>
-          </div>
+          <div id="sidebarListaAgendamentos" class="space-y-2.5"></div>
         </div>
 
         <div
@@ -713,204 +867,339 @@
               <strong
                 id="userDisplayName"
                 class="block text-sm font-semibold text-slate-900 dark:text-white leading-none"
-                >Usuário</strong
+                >Visitante</strong
               >
               <div id="userRoleBadge" class="mt-1"></div>
             </div>
           </div>
           <button
+            id="btnSair"
             class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors text-xs font-semibold"
             onclick="logoutUsuario()"
             title="Sair"
           >
             <i data-lucide="log-out" class="w-4 h-4"></i>
           </button>
+          <button
+            id="btnEntrar"
+            class="px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-lg transition-colors text-xs font-semibold items-center gap-1.5"
+            onclick="navegarPara('screenLogin')"
+            style="display: none"
+          >
+            <i data-lucide="log-in" class="w-4 h-4"></i> Entrar
+          </button>
         </div>
       </aside>
 
-      <main class="flex-1 relative flex flex-col">
-        <div class="top-bar absolute top-4 right-4 z-[1000] flex gap-3">
-          <button
-            id="btnCadastrarEspacoAdmin"
-            class="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-md flex items-center gap-2 transition-all text-sm"
-            style="display: none"
-            onclick="abrirModalEspacoManual()"
-          >
-            <i data-lucide="plus-circle" class="w-4 h-4"></i> Cadastrar Espaço
-            (Admin)
+      <main class="flex-1 min-w-0 relative flex flex-col h-full">
+        <!-- Barra superior (celular e tablet) -->
+        <div class="lg:hidden shrink-0 h-14 px-3 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+          <button onclick="alternarSidebar(true)" class="p-2 text-slate-600 dark:text-slate-300" aria-label="Abrir menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <span class="text-sm font-bold text-slate-900 dark:text-white">Comunidade Viva</span>
+          <button onclick="abrirNotificacoes()" class="relative p-2 text-slate-600 dark:text-slate-300" aria-label="Notificações">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span class="contador-notificacoes hidden absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold items-center justify-center"></span>
           </button>
         </div>
-        <div id="map" class="w-full h-full"></div>
+
+        <!-- EXPLORAR: catálogo e mapa -->
+        <section id="viewExplorar" class="view flex-1 min-h-0 flex flex-col">
+          <div class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 z-[900]">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative flex-1 min-w-[200px]">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input id="filtroTexto" type="text" aria-label="Buscar espaço" placeholder="Buscar por nome, bairro ou tipo" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pl-9" />
+              </div>
+              <input id="filtroData" type="date" aria-label="Disponível na data" title="Disponível na data" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 !w-auto" />
+              <input id="filtroConvidados" type="number" min="1" aria-label="Número de convidados" placeholder="Convidados" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 !w-28" />
+              <button onclick="alternarPainelFiltros()" class="h-[38px] px-3.5 flex items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Filtros
+                <span id="filtrosContador" class="hidden min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold items-center justify-center"></span>
+              </button>
+              <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <button id="modoGrade" onclick="alternarModoExplorar('grade')" class="modo-btn px-2.5 py-1 rounded-md" title="Ver em grade" aria-label="Ver em grade"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+                <button id="modoMapa" onclick="alternarModoExplorar('mapa')" class="modo-btn px-2.5 py-1 rounded-md" title="Ver no mapa" aria-label="Ver no mapa"><i data-lucide="map" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+
+            <div id="filtroChips" class="chip-rolagem flex gap-2 overflow-x-auto"></div>
+
+            <div id="painelFiltros" class="hidden grid-cols-1 md:grid-cols-3 gap-5 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div>
+                <label for="filtroPreco" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 mb-2">Preço máximo por hora: <span id="filtroPrecoValor" class="normal-case text-blue-600 dark:text-blue-400"></span></label>
+                <input id="filtroPreco" type="range" min="0" step="10" class="w-full accent-blue-600" />
+                <label for="filtroOrdem" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 mt-4">Ordenar por:</label>
+                <select id="filtroOrdem" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="avaliacao">Mais bem avaliados</option>
+                  <option value="precoAsc">Menor preço</option>
+                  <option value="precoDesc">Maior preço</option>
+                  <option value="capacidade">Maior capacidade</option>
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <p class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 mb-2">Comodidades:</p>
+                <div id="filtroComodidades" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
+                  <label class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer">
+                    <input id="filtroImediata" type="checkbox" class="w-4 h-4 accent-blue-600" /> Somente reserva imediata
+                  </label>
+                  <button onclick="limparFiltros()" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar filtros</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="painelGrade" class="flex-1 min-h-0 overflow-y-auto p-5 lg:p-6">
+            <p id="resultadoContador" class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-4"></p>
+            <div id="gradeEspacos" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"></div>
+          </div>
+
+          <div id="painelMapa" class="flex-1 min-h-0 relative" style="display: none">
+            <div class="top-bar absolute top-4 right-4 z-[800] flex gap-3">
+              <button
+                id="btnCadastrarEspacoAdmin"
+                class="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-md flex items-center gap-2 transition-all text-sm"
+                style="display: none"
+                onclick="abrirModalEspacoManual()"
+              >
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Cadastrar Espaço (Admin)
+              </button>
+            </div>
+            <div id="map" class="w-full h-full"></div>
+          </div>
+        </section>
+
+        <section id="viewDetalhe" class="view flex-1 min-h-0 overflow-y-auto" style="display: none"></section>
+
+        <section id="viewFavoritos" class="view flex-1 min-h-0 overflow-y-auto p-5 lg:p-8" style="display: none">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Favoritos</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">Os espaços que você salvou para decidir depois</p>
+          <div id="gradeFavoritos" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"></div>
+        </section>
+
+        <section id="viewReservas" class="view flex-1 min-h-0 overflow-y-auto p-5 lg:p-8" style="display: none">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Minhas Reservas</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-5">Acompanhe, cancele e avalie os seus eventos</p>
+          <div id="abasReservas" class="flex gap-2 mb-5 overflow-x-auto chip-rolagem"></div>
+          <div id="listaReservas" class="space-y-4 max-w-4xl"></div>
+        </section>
+
+        <section id="viewAdmin" class="view flex-1 min-h-0 overflow-y-auto p-5 lg:p-8" style="display: none">
+          <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+            <div>
+              <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-6 h-6 text-amber-500"></i> Painel Administrativo
+              </h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Receita, solicitações e gestão dos espaços</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="exportarReservasCsv()" class="px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+              </button>
+              <button onclick="restaurarDadosDemo()" class="px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restaurar dados
+              </button>
+              <button onclick="abrirModalEspacoManual()" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Cadastrar Espaço
+              </button>
+            </div>
+          </div>
+          <div id="abasAdmin" class="flex gap-2 mb-5 overflow-x-auto chip-rolagem"></div>
+          <div id="conteudoAdmin"></div>
+        </section>
       </main>
     </div>
 
     <!-- MODAL DE AGENDAMENTO -->
-    <div class="modal-backdrop" id="modalAgendamento">
-      <div
-        class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl"
-      >
-        <h3
-          class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"
-        >
-          <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i> Reservar
-          Espaço
+    <div class="modal-backdrop p-4" id="modalAgendamento">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-md">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i> Reservar Espaço
         </h3>
         <form id="agendamentoForm" class="space-y-4">
           <div class="form-group">
-            <label
-              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >Espaço Público:</label
-            >
-            <select
-              id="agendamentoEspacoId"
-              required
-              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Carregando espaços...</option>
-            </select>
+            <label for="agendamentoEspacoId" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Espaço:</label>
+            <select id="agendamentoEspacoId" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
           </div>
-
           <div class="form-group">
-            <label
-              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >Data e Hora de Início:</label
-            >
-            <input
-              type="datetime-local"
-              id="agendamentoInicio"
-              required
-              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            />
+            <label for="agendamentoData" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Data do Evento:</label>
+            <input type="date" id="agendamentoData" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="agendamentoInicio" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Início:</label>
+              <select id="agendamentoInicio" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+            <div class="form-group">
+              <label for="agendamentoFim" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Término:</label>
+              <select id="agendamentoFim" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+          </div>
+          <p id="agendamentoOcupados" class="hidden text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-3 py-2"></p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="agendamentoConvidados" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Convidados:</label>
+              <input type="number" id="agendamentoConvidados" required min="1" value="30" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="form-group">
+              <label for="agendamentoTipoEvento" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Tipo de Evento:</label>
+              <select id="agendamentoTipoEvento" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+          </div>
           <div class="form-group">
-            <label
-              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >Data e Hora de Término:</label
-            >
-            <input
-              type="datetime-local"
-              id="agendamentoFim"
-              required
-              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            />
+            <label for="agendamentoObservacoes" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Observações (opcional):</label>
+            <textarea id="agendamentoObservacoes" rows="2" placeholder="Ex: preciso chegar 1h antes para decorar" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
-
-          <div class="flex gap-3 pt-2">
-            <button
-              type="button"
-              class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all"
-              onclick="fecharModalAgendamento()"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm"
-            >
-              Confirmar Reserva
-            </button>
+          <div id="agendamentoResumo" class="text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-1.5"></div>
+          <div class="flex gap-3 pt-1">
+            <button type="button" class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all" onclick="fecharModal('modalAgendamento')">Cancelar</button>
+            <button type="submit" id="agendamentoEnviar" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm">Confirmar Reserva</button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- MODAL CADASTRO DE ESPAÇO (ADMIN ONLY) -->
-    <div class="modal-backdrop" id="modalCriarEspaco">
-      <div
-        class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl"
-      >
-        <h3
-          class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"
-        >
-          <i data-lucide="map-pin" class="w-5 h-5 text-amber-500"></i> Novo
-          Espaço (Admin)
+    <div class="modal-backdrop p-4" id="modalCriarEspaco">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-largo">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <i data-lucide="map-pin" class="w-5 h-5 text-amber-500"></i>
+          <span id="tituloModalEspaco">Novo Espaço (Admin)</span>
         </h3>
         <form id="espacoForm" class="space-y-4">
-          <div class="form-group">
-            <label
-              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >Nome do Local:</label
-            >
-            <input
-              type="text"
-              id="novoNome"
-              required
-              placeholder="Ex: Quadra Bairro Central"
-              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500"
-            />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="novoNome" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Nome do Local:</label>
+              <input type="text" id="novoNome" required placeholder="Ex: Salão Bairro Central" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="form-group">
+              <label for="novoTipo" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Tipo:</label>
+              <select id="novoTipo" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+            </div>
+            <div class="form-group">
+              <label for="novoBairro" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Bairro:</label>
+              <input type="text" id="novoBairro" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="form-group">
+              <label for="novoEndereco" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Endereço:</label>
+              <input type="text" id="novoEndereco" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
           </div>
-
-          <div class="form-group">
-            <label
-              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >Tipo:</label
-            >
-            <select
-              id="novoTipo"
-              required
-              class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="PRACA">Praça</option>
-              <option value="PARQUE">Parque</option>
-              <option value="QUADRA">Quadra Esportiva</option>
-              <option value="CENTRO_COMUNITARIO">Centro Comunitário</option>
-            </select>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="form-group">
+              <label for="novoCapacidade" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Capacidade:</label>
+              <input type="number" id="novoCapacidade" required min="1" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="form-group">
+              <label for="novoPreco" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">R$ / Hora:</label>
+              <input type="number" id="novoPreco" required min="0" step="5" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="form-group">
+              <label for="novaTaxa" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Limpeza (R$):</label>
+              <input type="number" id="novaTaxa" required min="0" step="5" value="0" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
           </div>
-
+          <div class="form-group">
+            <label for="novaDescricao" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Descrição:</label>
+            <textarea id="novaDescricao" rows="2" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="novasRegras" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Regras do Espaço:</label>
+            <input type="text" id="novasRegras" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div class="form-group">
+            <label for="novaFoto" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Link da Foto (opcional):</label>
+            <input type="url" id="novaFoto" placeholder="https://..." class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div class="form-group">
+            <p class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 mb-2">Comodidades:</p>
+            <div id="novasComodidades" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+          </div>
+          <label class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer">
+            <input id="novaImediata" type="checkbox" class="w-4 h-4 accent-amber-600" /> Reserva imediata (sem aprovação do administrador)
+          </label>
           <div class="grid grid-cols-2 gap-3">
             <div class="form-group">
-              <label
-                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-                >Latitude:</label
-              >
-              <input
-                type="text"
-                id="novoLat"
-                required
-                readonly
-                class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono"
-              />
+              <label for="novoLat" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Latitude:</label>
+              <input type="text" id="novoLat" required readonly class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono" />
             </div>
             <div class="form-group">
-              <label
-                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-                >Longitude:</label
-              >
-              <input
-                type="text"
-                id="novoLng"
-                required
-                readonly
-                class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono"
-              />
+              <label for="novoLng" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Longitude:</label>
+              <input type="text" id="novoLng" required readonly class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-mono" />
             </div>
           </div>
-
-          <div class="flex gap-3 pt-2">
-            <button
-              type="button"
-              class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all"
-              onclick="fecharModalEspaco()"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="flex-1 py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm"
-            >
-              Salvar Espaço
-            </button>
+          <div class="flex gap-3 pt-1">
+            <button type="button" class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all" onclick="fecharModal('modalCriarEspaco')">Cancelar</button>
+            <button type="submit" class="flex-1 py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm">Salvar Espaço</button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- MODAL DE AVALIAÇÃO -->
+    <div class="modal-backdrop p-4" id="modalAvaliacao">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-md">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+          <i data-lucide="star" class="w-5 h-5 text-amber-500"></i> Avaliar Espaço
+        </h3>
+        <p id="avaliacaoEspacoNome" class="text-sm text-slate-500 dark:text-slate-400 mb-4"></p>
+        <form id="avaliacaoForm" class="space-y-4">
+          <div id="avaliacaoEstrelas" class="flex gap-1" role="radiogroup" aria-label="Nota"></div>
+          <div class="form-group">
+            <label for="avaliacaoComentario" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Comentário:</label>
+            <textarea id="avaliacaoComentario" rows="3" required placeholder="Conte como foi o seu evento" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button type="button" class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all" onclick="fecharModal('modalAvaliacao')">Cancelar</button>
+            <button type="submit" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm">Enviar Avaliação</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE COMPROVANTE -->
+    <div class="modal-backdrop p-4" id="modalComprovante">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-md" id="comprovanteConteudo"></div>
+    </div>
+
+    <!-- MODAL DE NOTIFICAÇÕES -->
+    <div class="modal-backdrop p-4" id="modalNotificacoes">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i> Notificações
+          </h3>
+          <button onclick="fecharModal('modalNotificacoes')" class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" aria-label="Fechar">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="listaNotificacoes" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div class="modal-backdrop p-4" id="modalConfirmar">
+      <div class="modal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-sm">
+        <h3 id="confirmarTitulo" class="text-lg font-bold text-slate-900 dark:text-white mb-1"></h3>
+        <p id="confirmarTexto" class="text-sm text-slate-500 dark:text-slate-400 mb-5"></p>
+        <div class="flex gap-3">
+          <button id="confirmarNao" type="button" class="flex-1 py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-all">Voltar</button>
+          <button id="confirmarSim" type="button" class="flex-1 py-2 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-sm transition-all shadow-sm"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AVISOS -->
+    <div id="toasts" class="fixed top-4 right-4 left-4 sm:left-auto z-[10002] flex flex-col items-end gap-2 pointer-events-none"></div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       lucide.createIcons();
     </script>
+    <script src="data.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
