@@ -1,5 +1,6 @@
 package com.projeto.comunidade.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +23,8 @@ public class Usuario {
     @Column(unique = true, nullable = false)
     private String email;
 
+    // A senha é recebida no cadastro e no login, mas nunca devolvida pela API.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String senha;
 

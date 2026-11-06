@@ -193,27 +193,28 @@ function faixasOcupadas(ocupadas) {
   return faixas.map(([ini, fim]) => `${hora(ini)} às ${hora(fim)}`).join(", ");
 }
 
-function notificar(usuarioId, icone, texto) {
-  const lista = DB.ler("notificacoes");
-  lista.push({
-    id: DB.proximoId(lista),
-    usuarioId,
-    icone,
-    texto,
-    lida: false,
-    data: new Date().toISOString(),
-  });
-  DB.salvar("notificacoes", lista);
+// Executa uma alteração na API e atualiza a cópia local. Erros viram aviso na tela.
+async function enviarAoServidor(acao) {
+  try {
+    const resultado = await acao();
+    await DB.sincronizar();
+    return { ok: true, resultado };
+  } catch (erro) {
+    mostrarAviso(erro.message, "erro");
+    return { ok: false };
+  }
 }
 
-function notificarAdmins(icone, texto) {
-  DB.ler("usuarios").filter(eAdmin).forEach((u) => notificar(u.id, icone, texto));
-}
-
-function atualizarReserva(id, alteracoes) {
-  const lista = DB.ler("reservas");
-  Object.assign(lista.find((r) => r.id === id), alteracoes);
-  DB.salvar("reservas", lista);
+// Traz alterações feitas por outras pessoas sem atrapalhar quem está navegando.
+async function atualizarDoServidor() {
+  try {
+    if (await DB.sincronizar()) {
+      renderizarViewAtual();
+      renderizarHome();
+    }
+  } catch (erro) {
+    console.error(erro);
+  }
 }
 
 // --- NAVEGAÇÃO ENTRE TELAS ---
@@ -251,6 +252,7 @@ function mostrarView(nome) {
   });
   alternarSidebar(false);
   renderizarViewAtual();
+  atualizarDoServidor();
 }
 
 function renderizarViewAtual() {
@@ -293,7 +295,7 @@ function obterUsuarioLogado() {
 
 function verificarSessao() {
   const user = obterUsuarioLogado();
-  if (user && !usuarioPorId(user.id)) {
+  if (user && DB.ler("usuarios").length && !usuarioPorId(user.id)) {
     localStorage.removeItem("usuarioLogado");
     return verificarSessao();
   }
@@ -325,10 +327,15 @@ function logoutUsuario() {
 }
 
 // --- DOM READY ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (localStorage.getItem("cv_tema") === "escuro") document.documentElement.classList.add("dark");
 
-  DB.iniciar();
+  try {
+    await DB.sincronizar();
+  } catch (erro) {
+    mostrarAviso(erro.message, "erro");
+  }
+
   prepararFormularios();
   prepararFiltros();
   verificarSessao();
@@ -391,39 +398,38 @@ function prepararFormularios() {
 }
 
 // --- AUTENTICAÇÃO ---
-function autenticarUsuario(email, senha, somenteAdmin = false) {
-  const usuario = DB.ler("usuarios").find(
-    (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.senha === senha
-  );
+async function autenticarUsuario(email, senha, somenteAdmin = false) {
+  let usuario;
+  try {
+    usuario = await chamarApi("/usuarios/login", "POST", { email: email.trim(), senha });
+  } catch (erro) {
+    return mostrarAviso(erro.message, "erro");
+  }
 
-  if (!usuario) return mostrarAviso("E-mail ou senha incorretos.", "erro");
   if (somenteAdmin && !eAdmin(usuario)) return mostrarAviso("Esta conta não tem acesso administrativo.", "erro");
 
-  const { senha: _, ...sessao } = usuario;
-  localStorage.setItem("usuarioLogado", JSON.stringify(sessao));
+  localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
   if (somenteAdmin) viewAtual = "admin";
+  const { ok } = await enviarAoServidor(() => null);
+  if (!ok) return;
   verificarSessao();
   mostrarAviso(`Bem-vindo(a), ${usuario.nome.split(" ")[0]}!`);
 }
 
-function registrarUsuario(e) {
+async function registrarUsuario(e) {
   e.preventDefault();
-  const usuarios = DB.ler("usuarios");
-  const email = document.getElementById("regEmail").value.trim();
   const role = document.getElementById("regRole").value;
 
-  if (usuarios.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    return mostrarAviso("Este e-mail já está cadastrado.", "erro");
-  }
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi("/usuarios", "POST", {
+      nome: document.getElementById("regNome").value.trim(),
+      email: document.getElementById("regEmail").value.trim(),
+      senha: document.getElementById("regSenha").value,
+      role,
+    })
+  );
+  if (!ok) return;
 
-  usuarios.push({
-    id: DB.proximoId(usuarios),
-    nome: document.getElementById("regNome").value.trim(),
-    email,
-    senha: document.getElementById("regSenha").value,
-    role,
-  });
-  DB.salvar("usuarios", usuarios);
   e.target.reset();
   mostrarAviso(role === "ADMIN" ? "Conta de Administrador criada! Faça login." : "Conta criada com sucesso! Faça login.");
   navegarPara("screenLogin");
@@ -443,6 +449,18 @@ function textoNota(nota) {
   return nota.total
     ? `<span class="flex items-center gap-1 text-sm font-semibold text-slate-800 dark:text-slate-100"><i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>${nota.media.toFixed(1).replace(".", ",")}</span>`
     : `<span class="text-xs font-semibold text-blue-600 dark:text-blue-400">Novo</span>`;
+}
+
+function localDoEspaco(espaco) {
+  return [espaco.endereco, espaco.bairro].filter(Boolean).map(esc).join(", ");
+}
+
+function tipoEBairro(espaco) {
+  return [TIPOS_ESPACO[espaco.tipo].label, esc(espaco.bairro)].filter(Boolean).join(" · ");
+}
+
+function excedeCapacidade(espaco, convidados) {
+  return espaco.capacidade > 0 && convidados > espaco.capacidade;
 }
 
 function favoritosDoUsuario() {
@@ -466,9 +484,9 @@ function cartaoEspaco(espaco) {
         <h3 class="font-bold text-slate-900 dark:text-white leading-snug">${esc(espaco.nome)}</h3>
         ${textoNota(nota)}
       </div>
-      <p class="text-xs text-slate-500 dark:text-slate-400">${TIPOS_ESPACO[espaco.tipo].label} · ${esc(espaco.bairro)}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400">${tipoEBairro(espaco)}</p>
       <div class="flex items-center justify-between pt-1.5">
-        <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> até ${espaco.capacidade}</span>
+        ${espaco.capacidade ? `<span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> até ${espaco.capacidade}</span>` : "<span></span>"}
         <span class="text-sm text-slate-900 dark:text-white"><strong>${precoCurto(espaco.precoHora)}</strong>${espaco.precoHora ? '<span class="text-xs text-slate-500 dark:text-slate-400"> /hora</span>' : ""}</span>
       </div>
     </div>
@@ -483,18 +501,18 @@ function estadoVazio(icone, titulo, texto) {
   </div>`;
 }
 
-function alternarFavorito(evento, id) {
+async function alternarFavorito(evento, id) {
   evento.stopPropagation();
   const user = obterUsuarioLogado();
   if (!user) {
     exigirLogin();
     return;
   }
-  const todos = DB.ler("favoritos");
-  const lista = todos[user.id] || [];
-  const agoraFavorito = !lista.includes(id);
-  todos[user.id] = agoraFavorito ? [...lista, id] : lista.filter((f) => f !== id);
-  DB.salvar("favoritos", todos);
+  const agoraFavorito = !favoritosDoUsuario().includes(id);
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi(`/favoritos/${user.id}/${id}`, agoraFavorito ? "PUT" : "DELETE")
+  );
+  if (!ok) return;
   mostrarAviso(agoraFavorito ? "Adicionado aos favoritos." : "Removido dos favoritos.", "info");
 
   if (viewAtual === "favoritos") renderizarFavoritos();
@@ -604,7 +622,7 @@ function espacosFiltrados() {
     return (
       (!busca || texto.includes(busca)) &&
       (!filtros.tipo || e.tipo === filtros.tipo) &&
-      (!filtros.convidados || e.capacidade >= filtros.convidados) &&
+      !excedeCapacidade(e, filtros.convidados) &&
       (filtros.precoMax === null || e.precoHora <= filtros.precoMax) &&
       (!filtros.imediata || e.reservaImediata) &&
       filtros.comodidades.every((c) => e.comodidades.includes(c)) &&
@@ -716,7 +734,7 @@ function renderizarMarcadores(lista) {
       `<div style="width:200px">
         <img src="${esc(e.fotos[0] || "")}" alt="" onerror="this.remove()" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px" />
         <b style="font-size:14px">${esc(e.nome)}</b><br>
-        <span style="color:#64748b">${TIPOS_ESPACO[e.tipo].label} · até ${e.capacidade} pessoas</span><br>
+        <span style="color:#64748b">${TIPOS_ESPACO[e.tipo].label}${e.capacidade ? ` · até ${e.capacidade} pessoas` : ""}</span><br>
         <button onclick="abrirDetalhe(${e.id})" class="btn-primary" style="margin-top:8px;padding:7px 12px;font-size:12px">Ver detalhes</button>
       </div>`
     );
@@ -793,7 +811,7 @@ function renderizarDetalhe() {
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 mb-5 text-sm text-slate-500 dark:text-slate-400">
         ${textoNota(nota)}
         ${nota.total ? `<span>${nota.total} ${nota.total === 1 ? "avaliação" : "avaliações"}</span>` : ""}
-        <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${esc(e.endereco)}, ${esc(e.bairro)}</span>
+        ${localDoEspaco(e) ? `<span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${localDoEspaco(e)}</span>` : ""}
       </div>
 
       <div class="grid grid-cols-1 ${miniaturas.length ? "md:grid-cols-3" : ""} gap-2 rounded-3xl overflow-hidden mb-8">
@@ -805,7 +823,7 @@ function renderizarDetalhe() {
         <div class="space-y-8 min-w-0">
           <div class="flex flex-wrap gap-2">
             <span class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300"><i data-lucide="${TIPOS_ESPACO[e.tipo].icone}" class="w-3.5 h-3.5"></i>${TIPOS_ESPACO[e.tipo].label}</span>
-            <span class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"><i data-lucide="users" class="w-3.5 h-3.5"></i>Até ${e.capacidade} convidados</span>
+            ${e.capacidade ? `<span class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"><i data-lucide="users" class="w-3.5 h-3.5"></i>Até ${e.capacidade} convidados</span>` : ""}
             ${e.reservaImediata ? `<span class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400"><i data-lucide="zap" class="w-3.5 h-3.5"></i>Reserva imediata</span>` : ""}
           </div>
           <div>
@@ -1007,11 +1025,11 @@ function atualizarResumoReserva() {
     ${v.limpeza ? linha("Taxa de limpeza", v.limpeza) : ""}
     ${v.servico ? linha("Taxa de serviço (5%)", v.servico) : ""}
     <div class="flex justify-between font-bold text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700 pt-1.5"><span>Total</span><span>${v.total ? moeda(v.total) : "Gratuito"}</span></div>
-    ${convidados > espaco.capacidade ? `<p class="text-xs font-semibold text-rose-600 dark:text-rose-400 pt-1">Este espaço comporta até ${espaco.capacidade} convidados.</p>` : ""}`;
+    ${excedeCapacidade(espaco, convidados) ? `<p class="text-xs font-semibold text-rose-600 dark:text-rose-400 pt-1">Este espaço comporta até ${espaco.capacidade} convidados.</p>` : ""}`;
   enviar.textContent = espaco.reservaImediata ? "Confirmar Reserva" : "Solicitar Reserva";
 }
 
-function enviarReserva(e) {
+async function enviarReserva(e) {
   e.preventDefault();
   const user = obterUsuarioLogado();
   if (!user) return;
@@ -1023,42 +1041,32 @@ function enviarReserva(e) {
   const convidados = parseInt(document.getElementById("agendamentoConvidados").value);
 
   if (!espaco || isNaN(inicio) || isNaN(fim)) return mostrarAviso("Não há horários disponíveis nesta data.", "erro");
-  if (convidados > espaco.capacidade) return mostrarAviso(`Este espaço comporta até ${espaco.capacidade} convidados.`, "erro");
-  const ocupadas = horasOcupadas(espaco.id, dia);
-  for (let h = inicio; h < fim; h++) {
-    if (ocupadas.has(h)) return mostrarAviso("Este horário acabou de ser reservado. Escolha outro.", "erro");
-  }
+  if (excedeCapacidade(espaco, convidados)) return mostrarAviso(`Este espaço comporta até ${espaco.capacidade} convidados.`, "erro");
 
-  const lista = DB.ler("reservas");
-  const id = DB.proximoId(lista);
-  const status = espaco.reservaImediata ? "CONFIRMADA" : "PENDENTE";
-  const reserva = {
-    id,
-    codigo: `CV-${1000 + id}`,
-    espacoId: espaco.id,
-    usuarioId: user.id,
-    inicio: dataHora(dia, inicio),
-    fim: dataHora(dia, fim),
-    convidados,
-    tipoEvento: document.getElementById("agendamentoTipoEvento").value,
-    observacoes: document.getElementById("agendamentoObservacoes").value.trim(),
-    valores: calcularValores(espaco, fim - inicio),
-    status,
-    criadoEm: new Date().toISOString(),
-  };
-  lista.push(reserva);
-  DB.salvar("reservas", lista);
-
-  if (status === "CONFIRMADA") {
-    notificar(user.id, "calendar-check", `Sua reserva no ${espaco.nome} está confirmada.`);
-    notificarAdmins("calendar-check", `${user.nome} reservou o ${espaco.nome} (${reserva.codigo}).`);
-  } else {
-    notificarAdmins("inbox", `${user.nome} solicitou o ${espaco.nome} (${reserva.codigo}).`);
+  // O backend confere conflito de horário e capacidade novamente.
+  const { ok, resultado } = await enviarAoServidor(() =>
+    chamarApi("/agendamentos", "POST", {
+      dataHoraInicio: dataHora(dia, inicio),
+      dataHoraFim: dataHora(dia, fim),
+      usuario: { id: user.id },
+      espacoPublico: { id: espaco.id },
+      convidados,
+      tipoEvento: document.getElementById("agendamentoTipoEvento").value,
+      observacoes: document.getElementById("agendamentoObservacoes").value.trim(),
+    })
+  );
+  if (!ok) {
+    await atualizarDoServidor();
+    atualizarHorarios();
+    return;
   }
 
   fecharModal("modalAgendamento");
   renderizarViewAtual();
-  abrirComprovante(id, status === "CONFIRMADA" ? "Reserva confirmada!" : "Solicitação enviada! Você será avisado quando o administrador responder.");
+  abrirComprovante(
+    resultado.id,
+    resultado.status === "CONFIRMADA" ? "Reserva confirmada!" : "Solicitação enviada! Você será avisado quando o administrador responder."
+  );
 }
 
 function abrirComprovante(id, mensagem = "") {
@@ -1079,7 +1087,7 @@ function abrirComprovante(id, mensagem = "") {
     <div class="text-sm divide-y divide-slate-200 dark:divide-slate-800">
       ${linha("Código", r.codigo)}
       ${linha("Quando", formatarPeriodo(r))}
-      ${linha("Endereço", `${esc(e.endereco)}, ${esc(e.bairro)}`)}
+      ${localDoEspaco(e) ? linha("Endereço", localDoEspaco(e)) : ""}
       ${linha("Evento", esc(r.tipoEvento))}
       ${linha("Convidados", r.convidados)}
       ${r.observacoes ? linha("Observações", esc(r.observacoes)) : ""}
@@ -1109,7 +1117,7 @@ function baixarCalendario(id) {
     `DTSTART:${formatar(r.inicio)}`,
     `DTEND:${formatar(r.fim)}`,
     `SUMMARY:${limpar(`${r.tipoEvento} - ${e.nome}`)}`,
-    `LOCATION:${limpar(`${e.endereco}, ${e.bairro}`)}`,
+    `LOCATION:${limpar([e.endereco, e.bairro].filter(Boolean).join(", "))}`,
     `DESCRIPTION:Reserva ${r.codigo}`,
     "END:VEVENT",
     "END:VCALENDAR",
@@ -1121,15 +1129,13 @@ async function cancelarAgendamento(id) {
   const user = obterUsuarioLogado();
   const r = DB.ler("reservas").find((x) => x.id === id);
   const espaco = espacoPorId(r.espacoId);
-  const ok = await confirmar("Cancelar esta reserva?", `${espaco.nome} — ${formatarPeriodo(r)}. O horário ficará livre para outras pessoas.`, "Cancelar reserva");
-  if (!ok) return;
+  const confirmado = await confirmar("Cancelar esta reserva?", `${espaco.nome} — ${formatarPeriodo(r)}. O horário ficará livre para outras pessoas.`, "Cancelar reserva");
+  if (!confirmado) return;
 
-  atualizarReserva(id, { status: "CANCELADA" });
-  if (r.usuarioId === user.id) {
-    notificarAdmins("ban", `${user.nome} cancelou a reserva ${r.codigo} do ${espaco.nome}.`);
-  } else {
-    notificar(r.usuarioId, "ban", `Sua reserva ${r.codigo} no ${espaco.nome} foi cancelada pelo administrador.`);
-  }
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi(`/agendamentos/${id}/status`, "PUT", { status: "CANCELADA", usuarioId: user.id })
+  );
+  if (!ok) return;
   mostrarAviso("Reserva cancelada.", "info");
   renderizarViewAtual();
 }
@@ -1238,23 +1244,18 @@ function definirNota(nota) {
   renderizarEstrelas();
 }
 
-function enviarAvaliacao(e) {
+async function enviarAvaliacao(e) {
   e.preventDefault();
   const user = obterUsuarioLogado();
-  const reserva = DB.ler("reservas").find((r) => r.id === reservaAvaliandoId);
-  const espaco = espacoPorId(reserva.espacoId);
-  const lista = DB.ler("avaliacoes");
-  lista.push({
-    id: DB.proximoId(lista),
-    espacoId: reserva.espacoId,
-    usuarioId: user.id,
-    reservaId: reserva.id,
-    nota: notaAvaliacao,
-    comentario: document.getElementById("avaliacaoComentario").value.trim(),
-    data: new Date().toISOString(),
-  });
-  DB.salvar("avaliacoes", lista);
-  notificarAdmins("star", `${user.nome} avaliou o ${espaco.nome} com nota ${notaAvaliacao}.`);
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi("/avaliacoes", "POST", {
+      nota: notaAvaliacao,
+      comentario: document.getElementById("avaliacaoComentario").value.trim(),
+      usuario: { id: user.id },
+      agendamento: { id: reservaAvaliandoId },
+    })
+  );
+  if (!ok) return;
   fecharModal("modalAvaliacao");
   mostrarAviso("Obrigado pela sua avaliação!");
   renderizarViewAtual();
@@ -1334,13 +1335,12 @@ function abrirNotificacoes() {
         .join("")
     : '<p class="text-sm text-slate-500 dark:text-slate-400 py-6 text-center">Você não tem notificações.</p>';
 
-  todas.forEach((n) => {
-    if (n.usuarioId === user.id) n.lida = true;
-  });
-  DB.salvar("notificacoes", todas);
-  atualizarContadores();
   abrirModal("modalNotificacoes");
   atualizarIcones();
+
+  if (minhas.some((n) => !n.lida)) {
+    enviarAoServidor(() => chamarApi(`/notificacoes/${user.id}/lidas`, "PUT")).then(atualizarContadores);
+  }
 }
 
 // --- PAINEL ADMINISTRATIVO ---
@@ -1534,8 +1534,8 @@ function adminEspacos() {
             <h3 class="font-bold text-slate-900 dark:text-white leading-snug">${esc(e.nome)}</h3>
             ${textoNota(nota)}
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${TIPOS_ESPACO[e.tipo].label} · ${esc(e.bairro)}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400">${e.capacidade} pessoas · ${precoCurto(e.precoHora)}${e.precoHora ? "/h" : ""} · ${total} reservas</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${tipoEBairro(e)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">${e.capacidade ? `${e.capacidade} pessoas · ` : ""}${precoCurto(e.precoHora)}${e.precoHora ? "/h" : ""} · ${total} reservas</p>
           <div class="flex gap-2 mt-3">
             <button onclick="abrirDetalhe(${e.id})" class="px-3 py-1.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all">Ver</button>
             <button onclick="abrirModalEditarEspaco(${e.id})" class="px-3 py-1.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"><i data-lucide="pencil" class="w-3 h-3"></i> Editar</button>
@@ -1547,22 +1547,26 @@ function adminEspacos() {
     .join("")}</div>`;
 }
 
-function aprovarReserva(id) {
-  const r = DB.ler("reservas").find((x) => x.id === id);
-  const espaco = espacoPorId(r.espacoId);
-  atualizarReserva(id, { status: "CONFIRMADA" });
-  notificar(r.usuarioId, "calendar-check", `Sua reserva ${r.codigo} no ${espaco.nome} foi aprovada!`);
+async function aprovarReserva(id) {
+  const user = obterUsuarioLogado();
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi(`/agendamentos/${id}/status`, "PUT", { status: "CONFIRMADA", usuarioId: user.id })
+  );
+  if (!ok) return;
   mostrarAviso("Reserva aprovada. O usuário foi notificado.");
   renderizarViewAtual();
 }
 
 async function recusarReserva(id) {
+  const user = obterUsuarioLogado();
   const r = DB.ler("reservas").find((x) => x.id === id);
   const espaco = espacoPorId(r.espacoId);
-  const ok = await confirmar("Recusar esta solicitação?", `${espaco.nome} — ${formatarPeriodo(r)}. O usuário será notificado.`, "Recusar");
+  const confirmado = await confirmar("Recusar esta solicitação?", `${espaco.nome} — ${formatarPeriodo(r)}. O usuário será notificado.`, "Recusar");
+  if (!confirmado) return;
+  const { ok } = await enviarAoServidor(() =>
+    chamarApi(`/agendamentos/${id}/status`, "PUT", { status: "RECUSADA", usuarioId: user.id })
+  );
   if (!ok) return;
-  atualizarReserva(id, { status: "RECUSADA" });
-  notificar(r.usuarioId, "x-circle", `Sua solicitação ${r.codigo} no ${espaco.nome} foi recusada.`);
   mostrarAviso("Solicitação recusada.", "info");
   renderizarViewAtual();
 }
@@ -1586,13 +1590,6 @@ function exportarReservasCsv() {
   );
   const cabecalho = ["Código", "Espaço", "Cliente", "Início", "Fim", "Evento", "Convidados", "Total (R$)", "Status"].map(campo).join(";");
   baixarArquivo("reservas-comunidade-viva.csv", `﻿${[cabecalho, ...linhas].join("\r\n")}`, "text/csv;charset=utf-8");
-}
-
-async function restaurarDadosDemo() {
-  const ok = await confirmar("Restaurar os dados de exemplo?", "Espaços, reservas e contas criadas neste navegador serão substituídos pelos dados iniciais.", "Restaurar");
-  if (!ok) return;
-  DB.restaurar();
-  location.reload();
 }
 
 // --- CADASTRO E EDIÇÃO DE ESPAÇOS (ADMIN) ---
@@ -1634,12 +1631,11 @@ function abrirModalEditarEspaco(id) {
   abrirModal("modalCriarEspaco");
 }
 
-function salvarEspaco(evento) {
+async function salvarEspaco(evento) {
   evento.preventDefault();
   if (!eAdmin(obterUsuarioLogado())) return mostrarAviso("Apenas administradores podem cadastrar espaços.", "erro");
 
-  const lista = DB.ler("espacos");
-  const existente = lista.find((e) => e.id === espacoEditandoId);
+  const existente = espacoPorId(espacoEditandoId);
   const foto = document.getElementById("novaFoto").value.trim();
   const fotosAntigas = existente ? existente.fotos : [];
   const dados = {
@@ -1659,9 +1655,12 @@ function salvarEspaco(evento) {
     fotos: foto ? [foto, ...fotosAntigas.filter((f) => f !== foto)] : fotosAntigas.slice(1),
   };
 
-  if (existente) Object.assign(existente, dados);
-  else lista.push({ id: DB.proximoId(lista), ativo: true, ...dados });
-  DB.salvar("espacos", lista);
+  const { ok } = await enviarAoServidor(() =>
+    existente
+      ? chamarApi(`/espacos-publicos/${existente.id}`, "PUT", dados)
+      : chamarApi("/espacos-publicos", "POST", dados)
+  );
+  if (!ok) return;
 
   fecharModal("modalCriarEspaco");
   mostrarAviso(existente ? "Espaço atualizado." : "Espaço cadastrado com sucesso!");
@@ -1676,12 +1675,11 @@ async function removerEspaco(id) {
   if (ativas.length) {
     return mostrarAviso(`${espaco.nome} tem ${ativas.length} reserva(s) ativa(s). Cancele-as antes de remover.`, "erro");
   }
-  const ok = await confirmar("Remover este espaço?", `${espaco.nome} deixará de aparecer no catálogo. O histórico de reservas é mantido.`, "Remover");
-  if (!ok) return;
+  const confirmado = await confirmar("Remover este espaço?", `${espaco.nome} deixará de aparecer no catálogo. O histórico de reservas é mantido.`, "Remover");
+  if (!confirmado) return;
 
-  const lista = DB.ler("espacos");
-  lista.find((e) => e.id === id).ativo = false;
-  DB.salvar("espacos", lista);
+  const { ok } = await enviarAoServidor(() => chamarApi(`/espacos-publicos/${id}`, "DELETE"));
+  if (!ok) return;
   mostrarAviso("Espaço removido do catálogo.", "info");
   renderizarViewAtual();
   renderizarHome();

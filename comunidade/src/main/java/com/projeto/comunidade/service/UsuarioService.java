@@ -16,6 +16,10 @@ public class UsuarioService {
 
 
     public Usuario salvar(Usuario usuario) {
+        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+            throw new RuntimeException("Este e-mail já está cadastrado.");
+        }
+
         // Se não for passado um tipo de permissão, atribui USER por padrão
         if (usuario.getRole() == null || usuario.getRole().trim().isEmpty()) {
             usuario.setRole("USER");
@@ -23,6 +27,7 @@ public class UsuarioService {
             usuario.setRole(usuario.getRole().toUpperCase());
         }
 
+        usuario.setId(null);
         return usuarioRepository.save(usuario);
     }
 

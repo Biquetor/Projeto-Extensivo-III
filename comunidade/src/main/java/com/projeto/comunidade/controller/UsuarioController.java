@@ -14,6 +14,13 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class UsuarioController {
 
+    // Dados de outros usuários que podem aparecer publicamente (sem e-mail nem permissão).
+    public record UsuarioPublico(Long id, String nome) {
+        static UsuarioPublico de(Usuario usuario) {
+            return new UsuarioPublico(usuario.getId(), usuario.getNome());
+        }
+    }
+
     @Autowired
     private UsuarioService usuarioService;
 
@@ -28,13 +35,14 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listar() {
-        return ResponseEntity.ok(usuarioService.listarTodos());
+    public ResponseEntity<List<UsuarioPublico>> listar() {
+        return ResponseEntity.ok(usuarioService.listarTodos().stream().map(UsuarioPublico::de).toList());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         return usuarioService.buscarPorId(id)
+                .map(UsuarioPublico::de)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

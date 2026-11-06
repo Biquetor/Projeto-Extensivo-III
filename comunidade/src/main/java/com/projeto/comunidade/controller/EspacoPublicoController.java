@@ -35,4 +35,15 @@ public class EspacoPublicoController {
         EspacoPublico novoEspaco = espacoPublicoService.salvar(espaco);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoEspaco);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<EspacoPublico> atualizar(@PathVariable Long id, @RequestBody EspacoPublico espaco) {
+        return ResponseEntity.ok(espacoPublicoService.atualizar(id, espaco));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> remover(@PathVariable Long id) {
+        espacoPublicoService.remover(id);
+        return ResponseEntity.noContent().build();
+    }
 }

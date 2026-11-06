@@ -13,6 +13,9 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class AgendamentoController {
 
+    public record AlteracaoStatus(String status, Long usuarioId) {
+    }
+
     private final AgendamentoService agendamentoService;
 
     public AgendamentoController(AgendamentoService agendamentoService) {
@@ -29,6 +32,12 @@ public class AgendamentoController {
         Agendamento novoAgendamento = agendamentoService.salvar(agendamento);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoAgendamento);
     }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Agendamento> alterarStatus(@PathVariable Long id, @RequestBody AlteracaoStatus alteracao) {
+        return ResponseEntity.ok(agendamentoService.atualizarStatus(id, alteracao.status(), alteracao.usuarioId()));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletar(@PathVariable Long id) {
         try {
