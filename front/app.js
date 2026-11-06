@@ -418,20 +418,17 @@ async function autenticarUsuario(email, senha, somenteAdmin = false) {
 
 async function registrarUsuario(e) {
   e.preventDefault();
-  const role = document.getElementById("regRole").value;
-
   const { ok } = await enviarAoServidor(() =>
     chamarApi("/usuarios", "POST", {
       nome: document.getElementById("regNome").value.trim(),
       email: document.getElementById("regEmail").value.trim(),
       senha: document.getElementById("regSenha").value,
-      role,
     })
   );
   if (!ok) return;
 
   e.target.reset();
-  mostrarAviso(role === "ADMIN" ? "Conta de Administrador criada! Faça login." : "Conta criada com sucesso! Faça login.");
+  mostrarAviso("Conta criada com sucesso! Faça login.");
   navegarPara("screenLogin");
 }
 

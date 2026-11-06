@@ -20,13 +20,8 @@ public class UsuarioService {
             throw new RuntimeException("Este e-mail já está cadastrado.");
         }
 
-        // Se não for passado um tipo de permissão, atribui USER por padrão
-        if (usuario.getRole() == null || usuario.getRole().trim().isEmpty()) {
-            usuario.setRole("USER");
-        } else {
-            usuario.setRole(usuario.getRole().toUpperCase());
-        }
-
+        // O cadastro público cria apenas clientes, mesmo que a requisição peça outro perfil.
+        usuario.setRole("USER");
         usuario.setId(null);
         return usuarioRepository.save(usuario);
     }
